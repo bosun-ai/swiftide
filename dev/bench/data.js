@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793915829383,
+  "lastUpdate": 1793956836576,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36695,6 +36695,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2129912,
             "range": "± 3140",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f184670bc5268ab98ba98c22ab6540fd4d7acfae",
+          "message": "docs: correct the OpenAI base URL env var, retry log level and showcase branch (#1230)\n\n## Why\nSeveral docs and comments told readers things that are no longer true:\nthe wrong env var for the OpenAI base URL, the wrong log level for\nretried attempts, a deleted branch to clone, and an outdated recipe for\nOpenAI-compatible endpoints.\n\n## What\n- \\`OPENAI_API_BASE\\` -> \\`OPENAI_BASE_URL\\` (what async-openai reads)\nin the OpenAI rustdoc and the skill reference.\n- \\`ask-your-codebase\\`: retries log at WARN, the final give-up at ERROR\n(\\`swiftide_core::indexing_decorators\\`). The comment now says so, and\nthe default filter also turns off that target so the final error is\nshown once, not twice.\n- \\`release-notes-agent/OUTPUT.md\\` points at \\`master\\` instead of the\nmerged \\`docs/showcases\\` branch.\n- \\`context7.json\\` recommends\n\\`OpenAI::builder().api_base(..).api_key(..)\\`, with \\`.client(..)\\` for\nfull control.\n\nChecked with \\`cargo +nightly fmt --all -- --check\\` and \\`python3 -m\njson.tool context7.json\\`; no code behaviour changes besides the log\nfilter string.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n* Updated OpenAI-compatible endpoint setup guidance to use\n`OPENAI_BASE_URL` as the fallback for the base URL.\n* Clarified that a custom client remains available for full client\nconfiguration.\n* Updated the release-notes example to reference changes from `v0.33.0`\nto the showcase changes on `master`.\n* **Bug Fixes**\n* Adjusted default example logging to suppress indexing retry warnings\nand give-up errors.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-06T10:08:30+01:00",
+          "tree_id": "f021fe38becb463a482f6f7840ef241246300a91",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f184670bc5268ab98ba98c22ab6540fd4d7acfae"
+        },
+        "date": 1793956834010,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 917876,
+            "range": "± 46146",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258519,
+            "range": "± 3140",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1891,
+            "range": "± 2290",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6840,
+            "range": "± 6618",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28252,
+            "range": "± 30015",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4163889,
+            "range": "± 14998",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2090570,
+            "range": "± 7886",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16663588,
+            "range": "± 65548",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2095373,
+            "range": "± 4767",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66618419,
+            "range": "± 265315",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2115372,
+            "range": "± 3792",
             "unit": "ns/iter"
           }
         ]
