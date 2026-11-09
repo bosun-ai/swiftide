@@ -11,7 +11,8 @@ use async_trait::async_trait;
 use rmcp::RoleClient;
 use rmcp::ServiceExt;
 use rmcp::model::{
-    CallToolRequestParams, ClientCapabilities, ClientInfo, Implementation, InitializeRequestParams,
+    CallToolRequestParams, ClientCapabilities, ClientConfig, Implementation,
+    InitializeRequestParams,
 };
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
@@ -35,7 +36,7 @@ pub enum ToolFilter {
 /// Connects to an MCP server and provides tools at runtime to the agent.
 ///
 /// WARN: The rmcp has a quirky feature to serve from `()`. This does not work; serve from
-/// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
+/// `ClientConfig` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
     service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParams>>>>,
@@ -115,8 +116,8 @@ impl McpToolbox {
         }
     }
 
-    fn default_client_info() -> ClientInfo {
-        ClientInfo::new(
+    fn default_client_info() -> ClientConfig {
+        ClientConfig::new(
             ClientCapabilities::default(),
             Implementation::new("swiftide", env!("CARGO_PKG_VERSION")),
         )
@@ -167,7 +168,8 @@ impl ToolBox for McpToolbox {
         let filter = self.filter.as_ref();
         let mut server_name = peer_info
             .as_ref()
-            .map_or("mcp", |info| info.server_info.name.as_str())
+            .and_then(|info| info.server_info.as_ref())
+            .map_or("mcp", |server| server.name.as_str())
             .trim()
             .to_owned();
         if server_name.is_empty() {
@@ -481,7 +483,7 @@ mod tests {
         use rmcp::{
             ErrorData as McpError, ServerHandler,
             handler::server::{tool::ToolRouter, wrapper::Parameters},
-            model::{CallToolResult, ContentBlock, ServerCapabilities, ServerInfo},
+            model::{CallToolResult, ContentBlock, ServerCapabilities, ServerConfig},
             schemars, tool, tool_handler,
         };
 
@@ -546,8 +548,8 @@ mod tests {
 
         #[tool_handler]
         impl ServerHandler for Calculator {
-            fn get_info(&self) -> ServerInfo {
-                let mut info = ServerInfo::default();
+            fn get_info(&self) -> ServerConfig {
+                let mut info = ServerConfig::default();
                 info.instructions = Some("A simple calculator".into());
                 info.capabilities = ServerCapabilities::builder().enable_tools().build();
                 info
