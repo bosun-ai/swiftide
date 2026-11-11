@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793977726255,
+  "lastUpdate": 1794406393446,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37451,6 +37451,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2114521,
             "range": "± 4462",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fd14bf02ecedd5b305951fcb99a0b5834215593b",
+          "message": "fix(agents): upgrade rmcp to 3.9 for RUSTSEC-2026-0457 and RUSTSEC-2026-0462 (#1235)\n\n`cargo deny` flags rmcp 2.x with two advisories:\n\n- **RUSTSEC-2026-0462**: the Streamable HTTP client buffers response\nbodies with no size limit, so a malicious MCP server can exhaust memory.\nFixed in 3.9.0.\n- **RUSTSEC-2026-0457**: the OAuth client's SSRF filter checks host\nstrings, not resolved addresses. Fixed in 3.7.0.\n\nThis bumps rmcp to 3.9. The only breaking change we hit is that\n`InitializeResult::server_info` is now optional. If it is missing, the\nserver name falls back to `mcp`, as it already does for an empty name.\n`ClientInfo` and `ServerInfo` were renamed to `ClientConfig` and\n`ServerConfig` (the old names are deprecated aliases).\n\nSupersedes #1193.\n\n**Verification:** `cargo check --workspace --all-targets` and `cargo\ntest -p swiftide-agents --features mcp` pass, and clippy reports no\nwarnings.\n\nThe same commit is cherry-picked onto the 0.32 line\n(`fix/rmcp-3.9-on-0.32`) so that Bosun can pick it up without a swiftide\nupgrade.\n\n**Review follow-up:** Missing server names made a name clash more\nlikely. If two MCP servers report no name, both prefix their tools with\n`mcp:`. When they share a tool name, the agent silently kept only one\nand sent every call to that server. Now:\n\n- Servers that report no name use the toolbox name set with\n`McpToolbox::with_name` as the prefix, then `mcp`. Named servers are\nunchanged.\n- An agent fails to start with `AgentError::ToolBoxFailedToLoad` when\ntwo toolboxes provide a tool with the same name. Before, one of them was\ndropped silently.\n- Toolbox tools are now discovered again on every agent start (fresh,\nretry or continue) and any tool that is not registered yet is added. A\ntool that is already registered under the same name always wins, so a\ntoolbox cannot shadow a tool you added directly. Before, toolbox tools\nwere only discovered on the first start. A retried start could then end\nup without them, for example when a `BeforeAll` hook changed the tools.\nTool names stay the same, so tool calls in the history still resolve.\n\n**CI:** `cargo deny` now also flags RUSTSEC-2026-0459 (bundled SQLite).\nWe only get it through spider -> sqlx 0.8, which caps `libsqlite3-sys`\nbelow the patched 0.39, so there is no compatible upgrade yet. I ignored\nit in `deny.toml` with that reason. The MCP example also moves to\n`ClientConfig`, because the deprecated alias failed workspace clippy.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n  * MCP client setup now works with the updated configuration format.\n* Toolbox loading reports an error for duplicate tool names without\npartially registering tools.\n* **Improvements**\n* Tools are rediscovered each time an agent runs, and successfully\nloaded tools replace registered tools with matching names.\n* MCP tool prefixes use a nonblank, trimmed server name, then a\nnonblank, trimmed toolbox name, and otherwise fall back to “mcp.”\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-11T15:01:01+01:00",
+          "tree_id": "65d982a27a55121c8ecd44c9e59188736a169528",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fd14bf02ecedd5b305951fcb99a0b5834215593b"
+        },
+        "date": 1794406389726,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 976607,
+            "range": "± 24196",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 265849,
+            "range": "± 4561",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1865,
+            "range": "± 2061",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6690,
+            "range": "± 7058",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 25998,
+            "range": "± 25094",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4167109,
+            "range": "± 16914",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2088530,
+            "range": "± 4681",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16660803,
+            "range": "± 48862",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2094425,
+            "range": "± 6256",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66541779,
+            "range": "± 240933",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2115440,
+            "range": "± 3774",
             "unit": "ns/iter"
           }
         ]
