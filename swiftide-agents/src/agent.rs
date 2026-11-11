@@ -128,6 +128,11 @@ pub struct Agent {
     /// User messages waiting for any pending tool calls to complete.
     #[builder(private, default)]
     pub(crate) pending_user_messages: VecDeque<String>,
+
+    /// Whether the tools of the toolboxes are registered, so a retried start does not load them
+    /// again.
+    #[builder(private, default)]
+    pub(crate) toolboxes_loaded: bool,
 }
 
 impl Clone for Agent {
@@ -147,6 +152,7 @@ impl Clone for Agent {
             name: self.name.clone(),
             clear_default_tools: self.clear_default_tools,
             pending_user_messages: VecDeque::new(),
+            toolboxes_loaded: self.toolboxes_loaded,
         }
     }
 }
@@ -909,7 +915,12 @@ impl Agent {
     /// one of them would otherwise be dropped silently and calls routed to the other.
     ///
     /// Tools are only registered once every toolbox has loaded, so a failed load can be retried.
+    /// After a successful load, later calls do nothing.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
+        if self.toolboxes_loaded {
+            return Ok(());
+        }
+
         let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
             let tools = toolbox
@@ -928,6 +939,7 @@ impl Agent {
             }
         }
         self.tools.extend(toolbox_tools);
+        self.toolboxes_loaded = true;
 
         Ok(())
     }
@@ -1164,6 +1176,20 @@ mod tests {
             !agent.tools().iter().any(|tool| tool.name() == "search"),
             "a failed load must not register any toolbox tools"
         );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn retried_start_does_not_reload_toolboxes() {
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        agent.load_toolboxes().await.unwrap();
+        agent.load_toolboxes().await.unwrap();
+
+        assert!(agent.tools().iter().any(|tool| tool.name() == "search"));
     }
 
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
