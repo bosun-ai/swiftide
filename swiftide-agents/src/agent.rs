@@ -903,13 +903,26 @@ impl Agent {
         Ok(())
     }
 
+    /// Registers the tools of every toolbox.
+    ///
+    /// Fails when a toolbox tool has the same name as a tool that is already registered, as
+    /// one of them would otherwise be dropped silently and calls routed to the other.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
         for toolbox in &self.toolboxes {
             let tools = toolbox
                 .available_tools()
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
-            self.tools.extend(tools);
+            for tool in tools {
+                if self.tools.contains(&tool) {
+                    return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
+                        "Tool `{}` from toolbox `{}` has the same name as an already registered tool",
+                        tool.name(),
+                        toolbox.name()
+                    )));
+                }
+                self.tools.insert(tool);
+            }
         }
 
         Ok(())
@@ -1126,6 +1139,23 @@ mod tests {
             .unwrap();
 
         agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn toolbox_tools_with_the_same_name_fail_to_load() {
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        let error = agent.query_once("Find it").await.unwrap_err();
+
+        assert!(
+            matches!(&error, AgentError::ToolBoxFailedToLoad(source) if source.to_string().contains("`search`")),
+            "unexpected error: {error:?}"
+        );
     }
 
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
