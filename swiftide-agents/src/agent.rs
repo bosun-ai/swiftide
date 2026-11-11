@@ -330,9 +330,8 @@ impl AgentBuilder {
         self
     }
 
-    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added to the
-    /// to the agent. Available tools are evaluated at runtime, when the agent starts for the first
-    /// time.
+    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added
+    /// to the agent. Available tools are discovered at runtime, every time the agent starts.
     ///
     /// Agents can have many toolboxes.
     pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
@@ -386,8 +385,8 @@ impl Agent {
 
     /// Modify the tools of the agent at runtime
     ///
-    /// Note that any mcp tools are added to the agent after the first start, and will only then
-    /// also be available here.
+    /// Note that toolbox tools, such as mcp tools, are only available here after the agent has
+    /// started. They are discovered again on every start, which adds back any that were removed.
     pub fn tools_mut(&mut self) -> &mut HashSet<Box<dyn Tool>> {
         &mut self.tools
     }
@@ -463,9 +462,9 @@ impl Agent {
                     .await
                     .map_err(AgentError::MessageHistoryError)?;
             }
-
-            self.load_toolboxes().await?;
         }
+
+        self.load_toolboxes().await?;
 
         if let Some(query) = maybe_query {
             if cfg!(feature = "langfuse") {
@@ -903,14 +902,32 @@ impl Agent {
         Ok(())
     }
 
+    /// Discovers the tools of every toolbox and registers those that are not registered yet.
+    ///
+    /// Fails when two toolboxes provide a tool with the same name, as calls to it would otherwise
+    /// be routed to only one of them. Nothing is registered if any toolbox fails to load.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
+        let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
             let tools = toolbox
                 .available_tools()
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
-            self.tools.extend(tools);
+            for tool in tools {
+                if toolbox_tools.contains(&tool) {
+                    return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
+                        "Tool `{}` from toolbox `{}` has the same name as a tool from another toolbox",
+                        tool.name(),
+                        toolbox.name()
+                    )));
+                }
+                toolbox_tools.insert(tool);
+            }
         }
+
+        // `extend` keeps a tool that is already registered under the same name, so a toolbox can
+        // never shadow a tool that was added directly.
+        self.tools.extend(toolbox_tools);
 
         Ok(())
     }
@@ -1126,6 +1143,42 @@ mod tests {
             .unwrap();
 
         agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn toolbox_tools_with_the_same_name_fail_to_load() {
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        let error = agent.query_once("Find it").await.unwrap_err();
+
+        assert!(
+            matches!(&error, AgentError::ToolBoxFailedToLoad(source) if source.to_string().contains("`search`")),
+            "unexpected error: {error:?}"
+        );
+        assert!(
+            !agent.tools().iter().any(|tool| tool.name() == "search"),
+            "a failed load must not register any toolbox tools"
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn every_start_rediscovers_toolbox_tools() {
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        agent.load_toolboxes().await.unwrap();
+        agent.tools_mut().clear();
+        agent.load_toolboxes().await.unwrap();
+
+        assert!(agent.tools().iter().any(|tool| tool.name() == "search"));
     }
 
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
