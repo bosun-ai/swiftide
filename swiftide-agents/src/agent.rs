@@ -907,23 +907,27 @@ impl Agent {
     ///
     /// Fails when a toolbox tool has the same name as a tool that is already registered, as
     /// one of them would otherwise be dropped silently and calls routed to the other.
+    ///
+    /// Tools are only registered once every toolbox has loaded, so a failed load can be retried.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
+        let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
             let tools = toolbox
                 .available_tools()
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
             for tool in tools {
-                if self.tools.contains(&tool) {
+                if self.tools.contains(&tool) || toolbox_tools.contains(&tool) {
                     return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
                         "Tool `{}` from toolbox `{}` has the same name as an already registered tool",
                         tool.name(),
                         toolbox.name()
                     )));
                 }
-                self.tools.insert(tool);
+                toolbox_tools.insert(tool);
             }
         }
+        self.tools.extend(toolbox_tools);
 
         Ok(())
     }
@@ -1155,6 +1159,10 @@ mod tests {
         assert!(
             matches!(&error, AgentError::ToolBoxFailedToLoad(source) if source.to_string().contains("`search`")),
             "unexpected error: {error:?}"
+        );
+        assert!(
+            !agent.tools().iter().any(|tool| tool.name() == "search"),
+            "a failed load must not register any toolbox tools"
         );
     }
 
