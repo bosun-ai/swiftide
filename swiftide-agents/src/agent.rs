@@ -386,7 +386,7 @@ impl Agent {
     /// Modify the tools of the agent at runtime
     ///
     /// Note that toolbox tools, such as mcp tools, are only available here after the agent has
-    /// started. They are discovered again on every start, replacing any changes made to them.
+    /// started. They are discovered again on every start, which adds back any that were removed.
     pub fn tools_mut(&mut self) -> &mut HashSet<Box<dyn Tool>> {
         &mut self.tools
     }
@@ -902,8 +902,7 @@ impl Agent {
         Ok(())
     }
 
-    /// Discovers the tools of every toolbox and registers them, replacing the tools found on a
-    /// previous start.
+    /// Discovers the tools of every toolbox and registers those that are not registered yet.
     ///
     /// Fails when two toolboxes provide a tool with the same name, as calls to it would otherwise
     /// be routed to only one of them. Nothing is registered if any toolbox fails to load.
@@ -926,9 +925,9 @@ impl Agent {
             }
         }
 
-        for tool in toolbox_tools {
-            self.tools.replace(tool);
-        }
+        // `extend` keeps a tool that is already registered under the same name, so a toolbox can
+        // never shadow a tool that was added directly.
+        self.tools.extend(toolbox_tools);
 
         Ok(())
     }
