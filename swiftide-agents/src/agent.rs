@@ -128,11 +128,6 @@ pub struct Agent {
     /// User messages waiting for any pending tool calls to complete.
     #[builder(private, default)]
     pub(crate) pending_user_messages: VecDeque<String>,
-
-    /// Whether the tools of the toolboxes are registered, so a retried start does not load them
-    /// again.
-    #[builder(private, default)]
-    pub(crate) toolboxes_loaded: bool,
 }
 
 impl Clone for Agent {
@@ -152,7 +147,6 @@ impl Clone for Agent {
             name: self.name.clone(),
             clear_default_tools: self.clear_default_tools,
             pending_user_messages: VecDeque::new(),
-            toolboxes_loaded: self.toolboxes_loaded,
         }
     }
 }
@@ -336,9 +330,8 @@ impl AgentBuilder {
         self
     }
 
-    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added to the
-    /// to the agent. Available tools are evaluated at runtime, when the agent starts for the first
-    /// time.
+    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added
+    /// to the agent. Available tools are discovered at runtime, every time the agent starts.
     ///
     /// Agents can have many toolboxes.
     pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
@@ -392,8 +385,8 @@ impl Agent {
 
     /// Modify the tools of the agent at runtime
     ///
-    /// Note that any mcp tools are added to the agent after the first start, and will only then
-    /// also be available here.
+    /// Note that toolbox tools, such as mcp tools, are only available here after the agent has
+    /// started. They are discovered again on every start, replacing any changes made to them.
     pub fn tools_mut(&mut self) -> &mut HashSet<Box<dyn Tool>> {
         &mut self.tools
     }
@@ -469,9 +462,9 @@ impl Agent {
                     .await
                     .map_err(AgentError::MessageHistoryError)?;
             }
-
-            self.load_toolboxes().await?;
         }
+
+        self.load_toolboxes().await?;
 
         if let Some(query) = maybe_query {
             if cfg!(feature = "langfuse") {
@@ -909,18 +902,12 @@ impl Agent {
         Ok(())
     }
 
-    /// Registers the tools of every toolbox.
+    /// Discovers the tools of every toolbox and registers them, replacing the tools found on a
+    /// previous start.
     ///
-    /// Fails when a toolbox tool has the same name as a tool that is already registered, as
-    /// one of them would otherwise be dropped silently and calls routed to the other.
-    ///
-    /// Tools are only registered once every toolbox has loaded, so a failed load can be retried.
-    /// After a successful load, later calls do nothing.
+    /// Fails when two toolboxes provide a tool with the same name, as calls to it would otherwise
+    /// be routed to only one of them. Nothing is registered if any toolbox fails to load.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
-        if self.toolboxes_loaded {
-            return Ok(());
-        }
-
         let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
             let tools = toolbox
@@ -928,9 +915,9 @@ impl Agent {
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
             for tool in tools {
-                if self.tools.contains(&tool) || toolbox_tools.contains(&tool) {
+                if toolbox_tools.contains(&tool) {
                     return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
-                        "Tool `{}` from toolbox `{}` has the same name as an already registered tool",
+                        "Tool `{}` from toolbox `{}` has the same name as a tool from another toolbox",
                         tool.name(),
                         toolbox.name()
                     )));
@@ -938,8 +925,10 @@ impl Agent {
                 toolbox_tools.insert(tool);
             }
         }
-        self.tools.extend(toolbox_tools);
-        self.toolboxes_loaded = true;
+
+        for tool in toolbox_tools {
+            self.tools.replace(tool);
+        }
 
         Ok(())
     }
@@ -1179,7 +1168,7 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
-    async fn retried_start_does_not_reload_toolboxes() {
+    async fn every_start_rediscovers_toolbox_tools() {
         let mut agent = Agent::builder()
             .add_toolbox(vec![MockTool::new("search").boxed()])
             .llm(&MockChatCompletion::new())
@@ -1187,6 +1176,7 @@ mod tests {
             .unwrap();
 
         agent.load_toolboxes().await.unwrap();
+        agent.tools_mut().clear();
         agent.load_toolboxes().await.unwrap();
 
         assert!(agent.tools().iter().any(|tool| tool.name() == "search"));
