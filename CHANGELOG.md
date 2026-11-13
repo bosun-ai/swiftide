@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.34.1](https://github.com/bosun-ai/swiftide/compare/v0.34.0...v0.34.1) - 2026-11-13
+
+### New features
+
+- [105036f](https://github.com/bosun-ai/swiftide/commit/105036fbde99dbc1cb8463e3ca91c1ce2eb7ea00) *(agents)*  Choose what happens when toolboxes share a tool name ([#1240](https://github.com/bosun-ai/swiftide/pull/1240))
+
+### Bug fixes
+
+- [d3e85ea](https://github.com/bosun-ai/swiftide/commit/d3e85ea5294418e17b56523ac79c0785bf501d28) *(agents)*  Keep the first toolbox's tool when toolboxes share a tool name ([#1239](https://github.com/bosun-ai/swiftide/pull/1239))
+
+- [fd14bf0](https://github.com/bosun-ai/swiftide/commit/fd14bf02ecedd5b305951fcb99a0b5834215593b) *(agents)*  Upgrade rmcp to 3.9 for RUSTSEC-2026-0457 and RUSTSEC-2026-0462 ([#1235](https://github.com/bosun-ai/swiftide/pull/1235))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.34.0...0.34.1
+
+
+
 ## [0.34.0](https://github.com/bosun-ai/swiftide/compare/v0.33.0...v0.34.0) - 2026-11-06
 
 ### New features
