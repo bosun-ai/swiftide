@@ -50,6 +50,7 @@
 //! Agents run in a loop as long as they have new messages to process.
 mod agent;
 mod default_context;
+mod duplicate_tools;
 pub mod errors;
 pub mod hooks;
 mod state;
@@ -64,6 +65,7 @@ mod util;
 
 pub use agent::{Agent, AgentBuilder, AgentBuilderError};
 pub use default_context::DefaultContext;
+pub use duplicate_tools::DuplicateTools;
 pub use state::{State, StopReason};
 pub use task_agent::TaskAgent;
 
