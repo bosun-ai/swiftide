@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794588827919,
+  "lastUpdate": 1794591119794,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37775,6 +37775,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2115958,
             "range": "± 9902",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "105036fbde99dbc1cb8463e3ca91c1ce2eb7ea00",
+          "message": "feat(agents): choose what happens when toolboxes share a tool name (#1240)\n\nFollow-up to #1239. When two toolboxes give an agent a tool with the\nsame name, the agent keeps the first toolbox's tool and logs the rest.\nThat's still the default, but you can now choose:\n\n```rust\nuse swiftide::agents::{Agent, DuplicateTools};\n\nAgent::builder()\n    .add_toolbox(github_tools)\n    .add_toolbox(gitlab_tools)\n    .on_duplicate_tools(DuplicateTools::Prefix)\n    // ...\n```\n\n| Policy | Two toolboxes both provide `search` |\n| --- | --- |\n| `KeepFirst` (default) | The first toolbox's `search` is used; the\nother is logged with `warn` and skipped |\n| `Fail` | The agent doesn't start: `AgentError::ToolBoxFailedToLoad`\nnames the tool and toolbox |\n| `Prefix` | Both are kept: `search` and `<toolbox name>_search` (for\nexample `Unnamed_ToolBox_search`) |\n\nDetails:\n- Only clashes between toolboxes count. A tool added directly with\n`.tools(...)` still always wins, under every policy.\n- With `Prefix`, any character in the toolbox name other than a letter,\ndigit, `_` or `-` becomes `_`. The tool spec the model sees gets the new\nname too. If the prefixed name is also taken, the agent fails to start\nrather than dropping a tool.\n- `Fail` still registers nothing when it fails, like any other toolbox\nload error.\n\n**Tests:**\n- New agent tests: `Fail` refuses to start and registers nothing, and\n`Prefix` keeps both tools, with each name invoking its own toolbox's\ntool and the renamed tool spec. The existing `KeepFirst` test still\npasses.\n- A unit test covers how toolbox names are cleaned into prefixes.\n- I checked that the `Prefix` test fails when prefixing silently skips\nthe duplicate instead.\n- All `swiftide-agents` lib tests (80) pass; clippy with all features,\nfmt and rustdoc pass with `-D warnings`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n* Added configurable handling for toolbox tools with duplicate names:\nkeep the first tool, fail to load, or register later tools with a\ntoolbox-based prefix.\n* By default, the first toolbox’s tool is kept and later tools with the\nsame name are skipped.\n* Tools registered directly take precedence over toolbox tools, and\ncloned agents retain their duplicate-handling setting.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-13T18:22:22+01:00",
+          "tree_id": "9eefca30624fb7ebac5c71ba5ae265603220e871",
+          "url": "https://github.com/bosun-ai/swiftide/commit/105036fbde99dbc1cb8463e3ca91c1ce2eb7ea00"
+        },
+        "date": 1794591117536,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 520275,
+            "range": "± 53062",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 147423,
+            "range": "± 5072",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1552,
+            "range": "± 1775",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5683,
+            "range": "± 5697",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22406,
+            "range": "± 20603",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4149564,
+            "range": "± 10537",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2077596,
+            "range": "± 12562",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16570161,
+            "range": "± 56737",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2083738,
+            "range": "± 15305",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66269872,
+            "range": "± 167744",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2097147,
+            "range": "± 7079",
             "unit": "ns/iter"
           }
         ]
