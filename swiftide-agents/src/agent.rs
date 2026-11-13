@@ -904,8 +904,8 @@ impl Agent {
 
     /// Discovers the tools of every toolbox and registers those that are not registered yet.
     ///
-    /// Fails when two toolboxes provide a tool with the same name, as calls to it would otherwise
-    /// be routed to only one of them. Nothing is registered if any toolbox fails to load.
+    /// When toolboxes share a tool name, the first toolbox wins and the others are logged and
+    /// skipped. Nothing is registered if any toolbox fails to load.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
         let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
@@ -915,11 +915,12 @@ impl Agent {
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
             for tool in tools {
                 if toolbox_tools.contains(&tool) {
-                    return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
-                        "Tool `{}` from toolbox `{}` has the same name as a tool from another toolbox",
-                        tool.name(),
-                        toolbox.name()
-                    )));
+                    tracing::warn!(
+                        tool = %tool.name(),
+                        toolbox = %toolbox.name(),
+                        "Skipping tool; an earlier toolbox already provides a tool with this name"
+                    );
+                    continue;
                 }
                 toolbox_tools.insert(tool);
             }
@@ -1146,24 +1147,27 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
-    async fn toolbox_tools_with_the_same_name_fail_to_load() {
+    async fn the_first_toolbox_wins_when_toolboxes_share_a_tool_name() {
+        let first = MockTool::new("search");
+        first.expect_invoke_ok("from the first toolbox".into(), None);
         let mut agent = Agent::builder()
-            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .add_toolbox(vec![first.clone().boxed()])
             .add_toolbox(vec![MockTool::new("search").boxed()])
             .llm(&MockChatCompletion::new())
             .build()
             .unwrap();
 
-        let error = agent.query_once("Find it").await.unwrap_err();
+        agent.load_toolboxes().await.unwrap();
 
-        assert!(
-            matches!(&error, AgentError::ToolBoxFailedToLoad(source) if source.to_string().contains("`search`")),
-            "unexpected error: {error:?}"
-        );
-        assert!(
-            !agent.tools().iter().any(|tool| tool.name() == "search"),
-            "a failed load must not register any toolbox tools"
-        );
+        let search = agent
+            .tools()
+            .iter()
+            .find(|tool| tool.name() == "search")
+            .expect("search is registered");
+        let call = ToolCall::builder().name("search").id("1").build().unwrap();
+        let output = search.invoke(agent.context(), &call).await.unwrap();
+
+        assert_eq!(output, "from the first toolbox".into());
     }
 
     #[test_log::test(tokio::test)]
