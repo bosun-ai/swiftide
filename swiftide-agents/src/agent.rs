@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
+    duplicate_tools::{DuplicateTools, Resolution},
     errors::AgentError,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
@@ -61,6 +62,11 @@ pub struct Agent {
     /// Toolboxes make their tools available to the agent at runtime.
     #[builder(default)]
     pub(crate) toolboxes: Vec<Box<dyn ToolBox>>,
+
+    /// What the agent does when two of its toolboxes provide a tool with the same name. By
+    /// default, the tool from the first toolbox is kept and the others are logged and skipped.
+    #[builder(default)]
+    pub(crate) on_duplicate_tools: DuplicateTools,
 
     /// The language model that the agent uses for completion.
     #[builder(setter(custom))]
@@ -137,6 +143,7 @@ impl Clone for Agent {
             context: Arc::new(self.context.clone()),
             tools: self.tools.clone(),
             toolboxes: self.toolboxes.clone(),
+            on_duplicate_tools: self.on_duplicate_tools,
             llm: self.llm.clone(),
             system_prompt: self.system_prompt.clone(),
             state: self.state.clone(),
@@ -904,8 +911,8 @@ impl Agent {
 
     /// Discovers the tools of every toolbox and registers those that are not registered yet.
     ///
-    /// When toolboxes share a tool name, the first toolbox wins and the others are logged and
-    /// skipped. Nothing is registered if any toolbox fails to load.
+    /// When toolboxes share a tool name, [`DuplicateTools`] decides what happens; by default the
+    /// first toolbox wins. Nothing is registered if any toolbox fails to load.
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
         let mut toolbox_tools = HashSet::new();
         for toolbox in &self.toolboxes {
@@ -914,15 +921,24 @@ impl Agent {
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
             for tool in tools {
-                if toolbox_tools.contains(&tool) {
-                    tracing::warn!(
-                        tool = %tool.name(),
-                        toolbox = %toolbox.name(),
-                        "Skipping tool; an earlier toolbox already provides a tool with this name"
-                    );
+                if !toolbox_tools.contains(&tool) {
+                    toolbox_tools.insert(tool);
                     continue;
                 }
-                toolbox_tools.insert(tool);
+                match self.on_duplicate_tools.resolve(tool, toolbox.as_ref()) {
+                    Resolution::Skip => {}
+                    Resolution::Fail(error) => return Err(AgentError::ToolBoxFailedToLoad(error)),
+                    Resolution::Register(tool) => {
+                        if toolbox_tools.contains(&tool) {
+                            return Err(AgentError::ToolBoxFailedToLoad(anyhow::anyhow!(
+                                "Tool `{}` from toolbox `{}` clashes with another tool, even after prefixing",
+                                tool.name(),
+                                toolbox.name()
+                            )));
+                        }
+                        toolbox_tools.insert(tool);
+                    }
+                }
             }
         }
 
@@ -1168,6 +1184,69 @@ mod tests {
         let output = search.invoke(agent.context(), &call).await.unwrap();
 
         assert_eq!(output, "from the first toolbox".into());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn an_agent_that_fails_on_duplicate_tools_does_not_start() {
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .add_toolbox(vec![MockTool::new("search").boxed()])
+            .on_duplicate_tools(DuplicateTools::Fail)
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        let error = agent.load_toolboxes().await.unwrap_err();
+
+        assert!(
+            matches!(&error, AgentError::ToolBoxFailedToLoad(source) if source.to_string().contains("`search`")),
+            "unexpected error: {error:?}"
+        );
+        assert!(
+            !agent.tools().iter().any(|tool| tool.name() == "search"),
+            "a failed load must not register any toolbox tools"
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn prefixing_duplicate_tools_keeps_both_under_different_names() {
+        let first = MockTool::new("search");
+        first.expect_invoke_ok("from the first toolbox".into(), None);
+        let second = MockTool::new("search");
+        second.expect_invoke_ok("from the second toolbox".into(), None);
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![first.clone().boxed()])
+            .add_toolbox(vec![second.clone().boxed()])
+            .on_duplicate_tools(DuplicateTools::Prefix)
+            .llm(&MockChatCompletion::new())
+            .build()
+            .unwrap();
+
+        agent.load_toolboxes().await.unwrap();
+
+        let output_of = |name: &str| {
+            let tool = agent
+                .tools()
+                .iter()
+                .find(|tool| tool.name() == name)
+                .unwrap_or_else(|| panic!("`{name}` is registered"))
+                .clone();
+            let call = ToolCall::builder().name(name).id("1").build().unwrap();
+            let context = agent.context.clone();
+            async move { tool.invoke(context.as_ref(), &call).await.unwrap() }
+        };
+        assert_eq!(output_of("search").await, "from the first toolbox".into());
+        assert_eq!(
+            output_of("Unnamed_ToolBox_search").await,
+            "from the second toolbox".into()
+        );
+        let spec = agent
+            .tools()
+            .iter()
+            .find(|tool| tool.name() == "Unnamed_ToolBox_search")
+            .unwrap()
+            .tool_spec();
+        assert_eq!(spec.name, "Unnamed_ToolBox_search");
     }
 
     #[test_log::test(tokio::test)]
