@@ -19,7 +19,9 @@ pub enum DuplicateTools {
     /// Refuse to start the agent with `AgentError::ToolBoxFailedToLoad`.
     Fail,
     /// Keep both: the later tool is renamed to `<toolbox name>_<tool name>`, with the toolbox
-    /// name reduced to letters, digits, `_` and `-`. The first tool keeps its name.
+    /// name reduced to letters, digits, `_` and `-`. The first tool keeps its name. Names are
+    /// kept within 64 characters by shortening the toolbox name, then the end of the name; if
+    /// that makes two names equal, the agent fails to start.
     Prefix,
 }
 
@@ -54,10 +56,16 @@ impl DuplicateTools {
     }
 }
 
+/// Longest tool name `OpenAI` accepts.
+const MAX_TOOL_NAME_LEN: usize = 64;
+
+/// Shortens the toolbox name first, so the tool name stays intact whenever it fits.
 fn prefixed_name(toolbox: &str, tool: &str) -> String {
+    let prefix_len = MAX_TOOL_NAME_LEN.saturating_sub(tool.chars().count() + 1);
     let prefix: String = toolbox
         .trim()
         .chars()
+        .take(prefix_len)
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '-' {
                 c
@@ -67,6 +75,9 @@ fn prefixed_name(toolbox: &str, tool: &str) -> String {
         })
         .collect();
     format!("{prefix}_{tool}")
+        .chars()
+        .take(MAX_TOOL_NAME_LEN)
+        .collect()
 }
 
 /// A toolbox tool registered under another name, so it does not clash with an earlier toolbox.
@@ -109,5 +120,23 @@ mod tests {
             "Unnamed_ToolBox_search"
         );
         assert_eq!(prefixed_name("git-hub.v2", "search"), "git-hub_v2_search");
+    }
+
+    #[test]
+    fn prefixed_names_fit_the_64_character_limit_by_shortening_the_prefix() {
+        let toolbox = "t".repeat(80);
+        let tool = "s".repeat(60);
+
+        let name = prefixed_name(&toolbox, &tool);
+
+        assert_eq!(name.chars().count(), 64);
+        assert_eq!(name, format!("ttt_{tool}"));
+    }
+
+    #[test]
+    fn prefixed_names_of_very_long_tools_are_cut_at_64_characters() {
+        let name = prefixed_name("toolbox", &"s".repeat(64));
+
+        assert_eq!(name, format!("_{}", "s".repeat(63)));
     }
 }
