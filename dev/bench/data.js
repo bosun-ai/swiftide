@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794579609377,
+  "lastUpdate": 1794588827919,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37667,6 +37667,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2103086,
             "range": "± 3035",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d3e85ea5294418e17b56523ac79c0785bf501d28",
+          "message": "fix(agents): keep the first toolbox's tool when toolboxes share a tool name (#1239)\n\n#1235 made an agent fail to start (`ToolBoxFailedToLoad`) when two\ntoolboxes provide a tool with the same name. Before that, the first\ntoolbox's tool was kept and the duplicate dropped. Not released yet, but\nit breaks callers that add the same toolbox twice, which used to be\nharmless. For example, Bosun adds `repository_read` to an agent that\nalready has it.\n\nThis restores the old behaviour, and the duplicate is now logged instead\nof dropped silently:\n\n- **Before (master):** `Tool \\`search\\` from toolbox \\`…\\` has the same\nname as a tool from another toolbox`, and the agent doesn't start.\n- **After:** the first toolbox's `search` is used, and a `warn` names\nthe skipped tool and its toolbox.\n\nThe rest of #1235 is unchanged:\n- Toolbox tools are still rediscovered on every start.\n- A tool added directly still wins over a toolbox tool.\n- A toolbox that fails to load still registers nothing.\n\nIf we want the stricter check back later, it could be an opt-in on the\nbuilder rather than the default.\n\n**Tests:**\n- The duplicate-name test now checks that the first toolbox's tool is\nthe one invoked. It failed on master and passes now.\n- `swiftide-agents` lib tests (77), clippy and fmt pass.\n- Bosun's quak-core suite (1,298 tests) passes against this branch,\nincluding a test where an agent gets `repository_read` twice.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Loading toolboxes now skips duplicate tool names, keeping the tool\nfrom the first toolbox instead of failing. Tools added directly remain\nunaffected.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-13T16:41:37Z",
+          "tree_id": "e0f873fecda2ff7bd2d9859d9dceed80707993e0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d3e85ea5294418e17b56523ac79c0785bf501d28"
+        },
+        "date": 1794588824762,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 932173,
+            "range": "± 23508",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 237947,
+            "range": "± 7064",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1878,
+            "range": "± 2087",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6760,
+            "range": "± 6887",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26179,
+            "range": "± 27803",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4163089,
+            "range": "± 20998",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2089798,
+            "range": "± 9829",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16677175,
+            "range": "± 50889",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2097583,
+            "range": "± 11717",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66411855,
+            "range": "± 268760",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2115958,
+            "range": "± 9902",
             "unit": "ns/iter"
           }
         ]
