@@ -146,6 +146,9 @@ mcp = ["swiftide-agents", "swiftide-agents/mcp"]
 ## Metrics for usage, pipeline and agent performance
 metrics = ["swiftide-integrations/metrics", "swiftide-core/metrics"]
 
+## Circuit breaker for language models wrapped in `LanguageModelWithBackOff`
+circuit-breaker = ["swiftide-core/circuit-breaker"]
+
 ## Various mocking and testing utilities
 test-utils = ["swiftide-core/test-utils"]
 

@@ -11,6 +11,9 @@ use async_trait::async_trait;
 use futures_util::{StreamExt as _, TryStreamExt as _};
 use std::time::Duration;
 
+#[cfg(feature = "circuit-breaker")]
+pub use tokio_prompt_orchestrator::circuit_breaker::{CircuitBreakerConfig, CircuitState};
+
 /// Backoff configuration for api calls.
 /// Each time an api call fails backoff will wait an increasing period of time for each subsequent
 /// retry attempt. see <https://docs.rs/backoff/latest/backoff/> for more details.
@@ -42,6 +45,8 @@ impl Default for BackoffConfiguration {
 pub struct LanguageModelWithBackOff<P: Clone> {
     pub(crate) inner: P,
     config: BackoffConfiguration,
+    #[cfg(feature = "circuit-breaker")]
+    circuit_breaker: Option<SharedCircuitBreaker>,
 }
 
 impl<P: Clone> LanguageModelWithBackOff<P> {
@@ -49,7 +54,36 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
         Self {
             inner: client,
             config,
+            #[cfg(feature = "circuit-breaker")]
+            circuit_breaker: None,
         }
+    }
+
+    /// Adds a circuit breaker in front of the retries.
+    ///
+    /// Transient failures are counted in a sliding window. Once the breaker trips, requests fail
+    /// immediately with a [`LanguageModelError::PermanentError`] instead of waiting out the full
+    /// backoff schedule, until the configured timeout has passed and a probe request succeeds.
+    /// Permanent and context length errors are not counted, as they say nothing about the health
+    /// of the provider.
+    ///
+    /// Clones share the same breaker, so every pipeline step using a clone of this model sees the
+    /// same provider health. Streaming completions are not guarded.
+    #[cfg(feature = "circuit-breaker")]
+    #[must_use]
+    pub fn with_circuit_breaker(mut self, config: CircuitBreakerConfig) -> Self {
+        self.circuit_breaker = Some(SharedCircuitBreaker(std::sync::Arc::new(
+            tokio_prompt_orchestrator::circuit_breaker::CircuitBreaker::new(config),
+        )));
+        self
+    }
+
+    /// Returns the state of the circuit breaker, if one is configured.
+    #[cfg(feature = "circuit-breaker")]
+    pub fn circuit_state(&self) -> Option<CircuitState> {
+        self.circuit_breaker
+            .as_ref()
+            .map(|breaker| breaker.0.state())
     }
 
     pub(crate) fn strategy(&self) -> backoff::ExponentialBackoff {
@@ -74,6 +108,31 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
     where
         Fut: Future<Output = Result<T, LanguageModelError>>,
     {
+        #[cfg(feature = "circuit-breaker")]
+        let mut operation = {
+            let circuit_breaker = self.circuit_breaker.clone();
+            move || {
+                let circuit_breaker = circuit_breaker.clone();
+                let attempt = circuit_breaker
+                    .as_ref()
+                    .is_none_or(SharedCircuitBreaker::is_allowed)
+                    .then(&mut operation);
+
+                async move {
+                    let Some(attempt) = attempt else {
+                        return Err(LanguageModelError::permanent(
+                            "circuit breaker is open, not sending request",
+                        ));
+                    };
+                    let result = attempt.await;
+                    if let Some(circuit_breaker) = &circuit_breaker {
+                        circuit_breaker.record(&result);
+                    }
+                    result
+                }
+            }
+        };
+
         let mut failed_attempts: usize = 0;
 
         let result = backoff::future::retry_notify(
@@ -101,6 +160,41 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
                 "Language model request failed, giving up"
             );
         })
+    }
+}
+
+/// A circuit breaker shared between clones of a [`LanguageModelWithBackOff`].
+#[cfg(feature = "circuit-breaker")]
+#[derive(Clone)]
+struct SharedCircuitBreaker(
+    std::sync::Arc<tokio_prompt_orchestrator::circuit_breaker::CircuitBreaker>,
+);
+
+#[cfg(feature = "circuit-breaker")]
+impl SharedCircuitBreaker {
+    fn is_allowed(&self) -> bool {
+        self.0.is_allowed()
+    }
+
+    /// Only transient errors count as failures; see [`into_backoff_error`].
+    fn record<T>(&self, result: &Result<T, LanguageModelError>) {
+        match result {
+            Ok(_) => self.0.record_success(),
+            Err(LanguageModelError::TransientError(_)) => self.0.record_failure(),
+            Err(
+                LanguageModelError::ContextLengthExceeded(_)
+                | LanguageModelError::PermanentError(_),
+            ) => {}
+        }
+    }
+}
+
+#[cfg(feature = "circuit-breaker")]
+impl Debug for SharedCircuitBreaker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CircuitBreaker")
+            .field("state", &self.0.state())
+            .finish()
     }
 }
 
@@ -619,6 +713,75 @@ mod tests {
         assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
         assert_eq!(events.at(tracing::Level::ERROR).len(), 1);
         assert!(events.at(tracing::Level::WARN).is_empty());
+    }
+
+    #[cfg(feature = "circuit-breaker")]
+    #[tokio::test(start_paused = true)]
+    async fn test_circuit_breaker_stops_requests_after_repeated_transient_errors() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: usize::MAX,
+            error_type: MockErrorType::Transient,
+        };
+
+        let model_with_backoff =
+            LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default())
+                .with_circuit_breaker(CircuitBreakerConfig {
+                    failure_threshold: 2,
+                    min_calls: 2,
+                    timeout_duration: Duration::from_secs(3600),
+                    ..Default::default()
+                });
+        let clone = model_with_backoff.clone();
+
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
+
+        assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+        assert_eq!(call_count.load(Ordering::SeqCst), 2);
+        assert_eq!(model_with_backoff.circuit_state(), Some(CircuitState::Open));
+
+        // Clones share the breaker and fail without calling the provider
+        let result = clone.prompt(Prompt::from("Test prompt")).await;
+
+        assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+        assert_eq!(call_count.load(Ordering::SeqCst), 2);
+    }
+
+    #[cfg(feature = "circuit-breaker")]
+    #[tokio::test]
+    async fn test_circuit_breaker_ignores_permanent_errors() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: 3,
+            error_type: MockErrorType::Permanent,
+        };
+
+        let model_with_backoff =
+            LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default())
+                .with_circuit_breaker(CircuitBreakerConfig {
+                    failure_threshold: 1,
+                    min_calls: 1,
+                    ..Default::default()
+                });
+
+        for _ in 0..3 {
+            let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
+            assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+        }
+
+        assert_eq!(call_count.load(Ordering::SeqCst), 3);
+        assert_eq!(
+            model_with_backoff.circuit_state(),
+            Some(CircuitState::Closed)
+        );
+        assert!(
+            model_with_backoff
+                .prompt(Prompt::from("Test prompt"))
+                .await
+                .is_ok()
+        );
     }
 
     #[test]
