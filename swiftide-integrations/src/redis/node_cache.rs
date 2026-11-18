@@ -115,16 +115,21 @@ impl<T: Chunk> NodeCache for Redis<T> {
                     .arg(100)
                     .query_async(&mut cm)
                     .await?;
-                // Node cache keys end in a UUID. Preserve message history and nested namespaces.
+                // Node cache keys end in a canonical (hyphenated) UUID. Preserve message history
+                // and nested namespaces.
                 let keys: Vec<_> = keys
                     .into_iter()
                     .filter(|key| {
-                        key.strip_prefix(&prefix)
-                            .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
+                        key.as_str() != self.message_history_key.as_str()
+                            && key.strip_prefix(&prefix).is_some_and(|id| {
+                                uuid::Uuid::parse_str(id)
+                                    .is_ok_and(|uuid| uuid.hyphenated().to_string() == id)
+                            })
                     })
                     .collect();
                 if !keys.is_empty() {
-                    redis::cmd("DEL")
+                    // One non-blocking UNLINK per SCAN page rather than one call per key.
+                    redis::cmd("UNLINK")
                         .arg(keys)
                         .query_async::<usize>(&mut cm)
                         .await?;
@@ -196,6 +201,10 @@ mod tests {
         let cache = Redis::try_from_url(&url, "test[1]*").unwrap();
         let neighbor = Redis::try_from_url(&url, "test[1]*:neighbor").unwrap();
         let glob_neighbor = Redis::try_from_url(&url, "test1-other").unwrap();
+        // A UUID-suffixed history key inside the namespace must survive.
+        let history_uuid_key = format!("test[1]*:{}", uuid::Uuid::nil());
+        let mut history_cache = Redis::try_from_url(&url, "test[1]*").unwrap();
+        history_cache.with_message_history_key(history_uuid_key);
         let nodes: Vec<_> = (0..256)
             .map(|index| TextNode::new(format!("chunk {index}")))
             .collect();
@@ -207,6 +216,11 @@ mod tests {
         glob_neighbor.set(&nodes[0]).await;
         let message = ChatMessage::new_system("Keep this history");
         cache.push_owned(message.clone()).await.unwrap();
+        let history_message = ChatMessage::new_system("Keep this UUID-keyed history");
+        history_cache
+            .push_owned(history_message.clone())
+            .await
+            .unwrap();
 
         cache.clear().await.unwrap();
 
@@ -215,6 +229,10 @@ mod tests {
         }
         assert!(neighbor.get(&nodes[0]).await);
         assert!(glob_neighbor.get(&nodes[0]).await);
+        assert_eq!(
+            history_cache.history().await.unwrap(),
+            vec![history_message]
+        );
         assert_eq!(cache.history().await.unwrap(), vec![message.clone()]);
         cache.clear().await.unwrap();
         assert_eq!(cache.history().await.unwrap(), vec![message]);
