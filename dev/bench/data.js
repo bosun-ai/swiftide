@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794591119794,
+  "lastUpdate": 1795009642056,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37883,6 +37883,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2097147,
             "range": "± 7079",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "82875882+pcbeingused333@users.noreply.github.com",
+            "name": "alexcastgonz",
+            "username": "pcbeingused333"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "92e1a30fe2711ac8f867e061e4afa8bbaa6890fc",
+          "message": "fix(duckdb): keep node cache usable after clearing (#1247)\n\nDuckDB's `NodeCache::clear` drops the cache table while\n`cache_table_created` remains true. Subsequent writes skip table\ncreation, log a missing-table error, and leave every cache lookup\nreturning false on the same instance.\n\nClear the rows with `DELETE FROM` after ensuring the cache table exists.\nThis preserves the table, its index, and the lazy creation flag's\ninvariant. Clearing before first use and repeated clears still succeed.\nThe existing connection mutex serializes deletion with inserts and\nlookups; no flag reset or additional lock ordering is needed. No public\nAPI or schema changes.\n\nThe extended `test_clear` clears an unused cache twice, performs two\nset/get/clear cycles with repeated clears, and verifies another set/get\nsucceeds afterward.\n\nBefore: `set → get(true) → clear → set → get(false)` (cache table\nmissing).\nAfter: `set → get(true) → clear → set → get(true)`.\n\nRun the focused regression tests with:\n\n```sh\ncargo +1.97.1 test -p swiftide-integrations --no-default-features --features duckdb duckdb::node_cache::tests -- --nocapture\n```\n\nThis change and its regression test were prepared with AI assistance.\n\n## Local validation notes\n\nBase: master 105036f. No linked issue. The Redis cache change in c3806\nconcerns a different provider and root cause.\n\nObserved Rust regression result: base plus extended test: 1 passed, 1\nfailed (`test_clear`, assertion `duckdb.get(&node).await` after\nreinsertion); fixed tree: 2 passed, 0 failed. Logs:\n`/tmp/c3894-red-197.log` and `/tmp/c3894-green.log`.\n\nExact focused command (same command on both trees):\n```sh\n~/bin/oss-red ~/bin/oss-heavy timeout 1800 /home/owner/.cargo/bin/cargo +1.97.1 test --manifest-path /home/owner/projects/oss/swiftide-c3894/Cargo.toml --target-dir /home/owner/projects/oss/swiftide-c3806/target -p swiftide-integrations --no-default-features --features duckdb duckdb::node_cache::tests -- --nocapture\n```\n\n`rustfmt +1.97.1 --edition 2024 --check\nswiftide-integrations/src/duckdb/node_cache.rs` and `git diff --check`\npass. The broader `duckdb::` test selection returned 2 passed, 5 failed,\n1 ignored: the other tests require writing `/home/owner/.duckdb` and\nfailed with `Read-only file system`. NO-EJECUTADO: sandbox codex\nprevents DuckDB extension directory creation; no workaround attempted.\nFull workspace tests/lints were not run. Initial default-toolchain\ninvocation failed because Rust 1.95 is below the repository MSRV 1.97;\ninstalled 1.97.1 was then used successfully.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Clearing an unused cache now succeeds, and repeated clear operations\ncontinue to work.\n* Clearing the cache removes cached entries without removing the cache\nitself.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-11-18T14:35:01+01:00",
+          "tree_id": "4b19213a0d58ecb2ed9e5a9f55634921b4347c55",
+          "url": "https://github.com/bosun-ai/swiftide/commit/92e1a30fe2711ac8f867e061e4afa8bbaa6890fc"
+        },
+        "date": 1795009638689,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 954444,
+            "range": "± 40096",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 236462,
+            "range": "± 1059",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1905,
+            "range": "± 2133",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6839,
+            "range": "± 7799",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26640,
+            "range": "± 25931",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4172382,
+            "range": "± 12146",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2088034,
+            "range": "± 5814",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16683994,
+            "range": "± 39725",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2098561,
+            "range": "± 4028",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66744936,
+            "range": "± 210491",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2116584,
+            "range": "± 4052",
             "unit": "ns/iter"
           }
         ]
