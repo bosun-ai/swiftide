@@ -41,7 +41,7 @@ pretty_assertions = { workspace = true, optional = true }
 # Integrations
 qdrant-client = { workspace = true, optional = true }
 backoff = { version = "0.4.0", features = ["futures", "tokio"] }
-tokio-prompt-orchestrator = { version = "2.2", default-features = false, optional = true }
+llm-resilience = { version = "0.1.1", default-features = false, optional = true }
 bytes = { workspace = true }
 
 [dev-dependencies]
@@ -60,7 +60,7 @@ metrics = ["dep:metrics"]
 json-schema = []
 openai = ["dep:async-openai"]
 # Opt-in circuit breaker for `LanguageModelWithBackOff`
-circuit-breaker = ["dep:tokio-prompt-orchestrator"]
+circuit-breaker = ["dep:llm-resilience"]
 
 [lints]
 workspace = true

@@ -12,7 +12,7 @@ use futures_util::{StreamExt as _, TryStreamExt as _};
 use std::time::Duration;
 
 #[cfg(feature = "circuit-breaker")]
-pub use tokio_prompt_orchestrator::circuit_breaker::{CircuitBreakerConfig, CircuitState};
+pub use llm_resilience::{CircuitBreaker, CircuitStatus};
 
 /// Backoff configuration for api calls.
 /// Each time an api call fails backoff will wait an increasing period of time for each subsequent
@@ -46,7 +46,7 @@ pub struct LanguageModelWithBackOff<P: Clone> {
     pub(crate) inner: P,
     config: BackoffConfiguration,
     #[cfg(feature = "circuit-breaker")]
-    circuit_breaker: Option<SharedCircuitBreaker>,
+    circuit_breaker: Option<CircuitBreaker>,
 }
 
 impl<P: Clone> LanguageModelWithBackOff<P> {
@@ -61,28 +61,38 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
 
     /// Adds a circuit breaker in front of the retries.
     ///
-    /// Transient failures are counted in a sliding window. Once the breaker trips, requests fail
+    /// After `failure_threshold` transient failures in a row, the breaker opens and requests fail
     /// immediately with a [`LanguageModelError::PermanentError`] instead of waiting out the full
-    /// backoff schedule, until the configured timeout has passed and a probe request succeeds.
-    /// While half-open, one probe is sent at a time and other requests are turned away.
+    /// backoff schedule. Once the timeout has passed, one probe request is let through at a time;
+    /// enough successful probes close the breaker, a failed probe reopens it with a longer wait.
     /// Permanent and context length errors are not counted, as they say nothing about the health
     /// of the provider.
     ///
-    /// Clones share the same breaker, so every pipeline step using a clone of this model sees the
-    /// same provider health. Streaming completions are not guarded.
+    /// The breaker is shared by clones of this model (and by clones of the breaker), so every
+    /// pipeline step using a clone sees the same provider health. Streaming completions are not
+    /// guarded.
+    ///
+    /// ```
+    /// # use std::time::Duration;
+    /// # use swiftide_core::indexing_decorators::CircuitBreaker;
+    /// // Open after 5 transient failures in a row, probe again after 30 seconds, close when
+    /// // every probe succeeds.
+    /// let breaker = CircuitBreaker::new(5, 1.0, Duration::from_secs(30));
+    /// # let _ = breaker;
+    /// ```
     #[cfg(feature = "circuit-breaker")]
     #[must_use]
-    pub fn with_circuit_breaker(mut self, config: CircuitBreakerConfig) -> Self {
-        self.circuit_breaker = Some(SharedCircuitBreaker::new(config));
+    pub fn with_circuit_breaker(mut self, circuit_breaker: CircuitBreaker) -> Self {
+        self.circuit_breaker = Some(circuit_breaker);
         self
     }
 
     /// Returns the state of the circuit breaker, if one is configured.
     #[cfg(feature = "circuit-breaker")]
-    pub fn circuit_state(&self) -> Option<CircuitState> {
+    pub fn circuit_state(&self) -> Option<CircuitStatus> {
         self.circuit_breaker
             .as_ref()
-            .map(SharedCircuitBreaker::state)
+            .map(CircuitBreaker::status_sync)
     }
 
     pub(crate) fn strategy(&self) -> backoff::ExponentialBackoff {
@@ -118,15 +128,10 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
                 let attempt = operation();
 
                 async move {
-                    let Some(circuit_breaker) = circuit_breaker else {
-                        return attempt.await;
-                    };
-                    let Some(_probe) = circuit_breaker.admit() else {
-                        return Err(LanguageModelError::permanent(
-                            "circuit breaker is open, not sending request",
-                        ));
-                    };
-                    circuit_breaker.record(attempt.await)
+                    match circuit_breaker {
+                        Some(circuit_breaker) => guarded(&circuit_breaker, attempt).await,
+                        None => attempt.await,
+                    }
                 }
             }
         };
@@ -161,92 +166,48 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
     }
 }
 
-/// A circuit breaker shared between clones of a [`LanguageModelWithBackOff`].
+/// Runs one attempt through the circuit breaker.
+///
+/// Admission and the breaker's state changes happen under one lock in `llm-resilience`: while
+/// half-open only one probe is admitted, and the permit carries the breaker generation it was
+/// admitted in, so a slow request admitted before the breaker opened cannot close it when it
+/// finishes. Dropping the permit (a cancelled attempt, or a non-transient error) records nothing
+/// and frees a probe slot.
+///
+/// Only transient errors count as failures; see [`into_backoff_error`]. When this failure opens
+/// the breaker, it is returned as a permanent error so the retry loop stops now instead of
+/// sleeping for another backoff interval first.
 #[cfg(feature = "circuit-breaker")]
-#[derive(Clone)]
-struct SharedCircuitBreaker(std::sync::Arc<SharedCircuitBreakerInner>);
+async fn guarded<T>(
+    circuit_breaker: &CircuitBreaker,
+    attempt: impl Future<Output = Result<T, LanguageModelError>>,
+) -> Result<T, LanguageModelError> {
+    let Some(permit) = circuit_breaker.try_acquire() else {
+        return Err(LanguageModelError::permanent(
+            "circuit breaker is open, not sending request",
+        ));
+    };
 
-#[cfg(feature = "circuit-breaker")]
-struct SharedCircuitBreakerInner {
-    breaker: tokio_prompt_orchestrator::circuit_breaker::CircuitBreaker,
-    /// Set while a half-open probe is in flight, so recovery is tested by one request at a time.
-    probe_in_flight: std::sync::atomic::AtomicBool,
-}
-
-/// Admission to call the provider. Holds the probe slot while half-open and releases it on drop,
-/// so a probe that completes or is cancelled frees the slot either way.
-#[cfg(feature = "circuit-breaker")]
-struct Admission(Option<SharedCircuitBreaker>);
-
-#[cfg(feature = "circuit-breaker")]
-impl Drop for Admission {
-    fn drop(&mut self) {
-        if let Some(circuit_breaker) = &self.0 {
-            circuit_breaker
-                .0
-                .probe_in_flight
-                .store(false, std::sync::atomic::Ordering::Release);
+    match attempt.await {
+        Ok(value) => {
+            permit.success();
+            Ok(value)
         }
-    }
-}
-
-#[cfg(feature = "circuit-breaker")]
-impl SharedCircuitBreaker {
-    fn new(config: CircuitBreakerConfig) -> Self {
-        Self(std::sync::Arc::new(SharedCircuitBreakerInner {
-            breaker: tokio_prompt_orchestrator::circuit_breaker::CircuitBreaker::new(config),
-            probe_in_flight: std::sync::atomic::AtomicBool::new(false),
-        }))
-    }
-
-    fn state(&self) -> CircuitState {
-        self.0.breaker.state()
-    }
-
-    /// Returns an admission if a request may be sent now. While half-open only one probe is
-    /// admitted at a time; everything else is turned away until it completes.
-    fn admit(&self) -> Option<Admission> {
-        use std::sync::atomic::Ordering;
-
-        if !self.0.breaker.is_allowed() {
-            return None;
-        }
-        match self.0.breaker.state() {
-            CircuitState::Closed => Some(Admission(None)),
-            CircuitState::HalfOpen => self
-                .0
-                .probe_in_flight
-                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-                .ok()
-                .map(|_| Admission(Some(self.clone()))),
-            // Another clone opened the breaker after `is_allowed`
-            CircuitState::Open => None,
-        }
-    }
-
-    /// Records the outcome of an attempt. Only transient errors count as failures; see
-    /// [`into_backoff_error`].
-    ///
-    /// When this failure opens the breaker, it is returned as a permanent error so the retry loop
-    /// stops now instead of sleeping for another backoff interval first.
-    fn record<T>(&self, result: Result<T, LanguageModelError>) -> Result<T, LanguageModelError> {
-        match result {
-            Ok(value) => {
-                self.0.breaker.record_success();
-                Ok(value)
+        Err(LanguageModelError::TransientError(error)) => {
+            permit.failure();
+            if circuit_breaker.is_open_sync() {
+                Err(LanguageModelError::permanent(CircuitOpened(error)))
+            } else {
+                Err(LanguageModelError::TransientError(error))
             }
-            Err(LanguageModelError::TransientError(error)) => {
-                self.0.breaker.record_failure();
-                if self.state() == CircuitState::Open {
-                    Err(LanguageModelError::permanent(CircuitOpened(error)))
-                } else {
-                    Err(LanguageModelError::TransientError(error))
-                }
-            }
-            Err(
-                error @ (LanguageModelError::ContextLengthExceeded(_)
-                | LanguageModelError::PermanentError(_)),
-            ) => Err(error),
+        }
+        // Permanent and context length errors say nothing about the provider's health
+        Err(
+            error @ (LanguageModelError::ContextLengthExceeded(_)
+            | LanguageModelError::PermanentError(_)),
+        ) => {
+            drop(permit);
+            Err(error)
         }
     }
 }
@@ -267,15 +228,6 @@ impl fmt::Display for CircuitOpened {
 impl std::error::Error for CircuitOpened {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.0.source()
-    }
-}
-
-#[cfg(feature = "circuit-breaker")]
-impl Debug for SharedCircuitBreaker {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("CircuitBreaker")
-            .field("state", &self.state())
-            .finish()
     }
 }
 
@@ -808,19 +760,17 @@ mod tests {
 
         let model_with_backoff =
             LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default())
-                .with_circuit_breaker(CircuitBreakerConfig {
-                    failure_threshold: 2,
-                    min_calls: 2,
-                    timeout_duration: Duration::from_hours(1),
-                    ..Default::default()
-                });
+                .with_circuit_breaker(CircuitBreaker::new(2, 1.0, Duration::from_hours(1)));
         let clone = model_with_backoff.clone();
 
         let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
 
         assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
         assert_eq!(call_count.load(Ordering::SeqCst), 2);
-        assert_eq!(model_with_backoff.circuit_state(), Some(CircuitState::Open));
+        assert_eq!(
+            model_with_backoff.circuit_state(),
+            Some(CircuitStatus::Open)
+        );
 
         // Clones share the breaker and fail without calling the provider
         let result = clone.prompt(Prompt::from("Test prompt")).await;
@@ -841,11 +791,7 @@ mod tests {
 
         let model_with_backoff =
             LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default())
-                .with_circuit_breaker(CircuitBreakerConfig {
-                    failure_threshold: 1,
-                    min_calls: 1,
-                    ..Default::default()
-                });
+                .with_circuit_breaker(CircuitBreaker::new(1, 1.0, Duration::from_hours(1)));
 
         for _ in 0..3 {
             let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
@@ -855,7 +801,7 @@ mod tests {
         assert_eq!(call_count.load(Ordering::SeqCst), 3);
         assert_eq!(
             model_with_backoff.circuit_state(),
-            Some(CircuitState::Closed)
+            Some(CircuitStatus::Closed)
         );
         assert!(
             model_with_backoff
@@ -883,12 +829,7 @@ mod tests {
                 ..Default::default()
             },
         )
-        .with_circuit_breaker(CircuitBreakerConfig {
-            failure_threshold: 2,
-            min_calls: 2,
-            timeout_duration: Duration::from_hours(1),
-            ..Default::default()
-        });
+        .with_circuit_breaker(CircuitBreaker::new(2, 1.0, Duration::from_hours(1)));
 
         let started = tokio::time::Instant::now();
         let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
@@ -913,12 +854,7 @@ mod tests {
         };
 
         let first = LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default())
-            .with_circuit_breaker(CircuitBreakerConfig {
-                failure_threshold: 2,
-                min_calls: 2,
-                timeout_duration: Duration::from_hours(1),
-                ..Default::default()
-            });
+            .with_circuit_breaker(CircuitBreaker::new(2, 1.0, Duration::from_hours(1)));
         let second = first.clone();
 
         // Whichever runs first fails once and sleeps; the other one opens the breaker meanwhile.
@@ -931,7 +867,7 @@ mod tests {
         assert!(matches!(a, Err(LanguageModelError::PermanentError(_))));
         assert!(matches!(b, Err(LanguageModelError::PermanentError(_))));
         assert_eq!(call_count.load(Ordering::SeqCst), 2);
-        assert_eq!(first.circuit_state(), Some(CircuitState::Open));
+        assert_eq!(first.circuit_state(), Some(CircuitStatus::Open));
     }
 
     #[cfg(feature = "circuit-breaker")]
@@ -962,18 +898,12 @@ mod tests {
             },
             BackoffConfiguration::default(),
         )
-        .with_circuit_breaker(CircuitBreakerConfig {
-            failure_threshold: 1,
-            min_calls: 1,
-            success_threshold: 1,
-            timeout_duration: Duration::ZERO,
-            ..Default::default()
-        });
+        .with_circuit_breaker(CircuitBreaker::new(1, 1.0, Duration::ZERO));
 
         // Trip the breaker; with a zero timeout the next request is a half-open probe
         let breaker = model_with_backoff.circuit_breaker.clone().unwrap();
-        breaker.0.breaker.record_failure();
-        assert_eq!(breaker.state(), CircuitState::Open);
+        breaker.try_acquire().unwrap().failure();
+        assert_eq!(breaker.status_sync(), CircuitStatus::Open);
         model_with_backoff
     }
 
@@ -998,7 +928,7 @@ mod tests {
         );
         assert_eq!(
             model_with_backoff.circuit_state(),
-            Some(CircuitState::Closed)
+            Some(CircuitStatus::Closed)
         );
 
         // The probe closed the breaker, so requests flow again
@@ -1029,6 +959,45 @@ mod tests {
                 .is_ok()
         );
         assert_eq!(call_count.load(Ordering::SeqCst), 2);
+    }
+
+    #[cfg(feature = "circuit-breaker")]
+    #[tokio::test(start_paused = true)]
+    async fn test_circuit_breaker_ignores_success_admitted_before_it_opened() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let breaker = CircuitBreaker::new(1, 1.0, Duration::ZERO);
+        let model_with_backoff = LanguageModelWithBackOff::new(
+            SlowPrompt {
+                call_count: call_count.clone(),
+            },
+            BackoffConfiguration::default(),
+        )
+        .with_circuit_breaker(breaker.clone());
+
+        // A request is admitted while the breaker is closed and takes 5 seconds
+        let model = model_with_backoff.clone();
+        let stale = tokio::spawn(async move { model.prompt(Prompt::from("Test prompt")).await });
+        while call_count.load(Ordering::SeqCst) == 0 {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(Duration::from_secs(1)).await;
+
+        // Meanwhile the breaker opens and a probe starts
+        breaker.trip().await;
+        let model = model_with_backoff.clone();
+        let probe = tokio::spawn(async move { model.prompt(Prompt::from("Test prompt")).await });
+        while call_count.load(Ordering::SeqCst) == 1 {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(breaker.status_sync(), CircuitStatus::HalfOpen);
+
+        // The older request succeeds first; it must not close the breaker
+        assert!(stale.await.unwrap().is_ok());
+        assert_eq!(breaker.status_sync(), CircuitStatus::HalfOpen);
+
+        // Only the probe decides
+        assert!(probe.await.unwrap().is_ok());
+        assert_eq!(breaker.status_sync(), CircuitStatus::Closed);
     }
 
     #[test]
