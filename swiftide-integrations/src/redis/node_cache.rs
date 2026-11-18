@@ -222,7 +222,9 @@ mod tests {
             .await
             .unwrap();
 
-        cache.clear().await.unwrap();
+        // Clear through the instance that owns the UUID-shaped history key: it is only
+        // protected from its own `clear`, and must survive it.
+        history_cache.clear().await.unwrap();
 
         for node in &nodes {
             assert!(!cache.get(node).await, "clear must remove cached nodes");
