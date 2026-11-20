@@ -118,6 +118,8 @@ deadpool = { workspace = true, features = [
 ], optional = true }
 fluvio = { workspace = true, optional = true }
 rdkafka = { workspace = true, optional = true }
+# Require the zlib fix for Kafka users even when they use their own lockfile.
+libz-sys = { version = "1.1.33", default-features = false, optional = true }
 arrow-array = { workspace = true, optional = true }
 parquet-arrow-array = { package = "arrow-array", version = "59.1", default-features = false, optional = true }
 lancedb = { workspace = true, optional = true }
@@ -244,7 +246,7 @@ lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
 # Kafka loader
-kafka = ["dep:rdkafka"]
+kafka = ["dep:rdkafka", "dep:libz-sys"]
 # Paruqet loader
 parquet = ["dep:parquet", "dep:parquet-arrow-array"]
 # Anthropic for prompting and completions
