@@ -6491,6 +6491,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4744e383959f0db86ede514b809b1c53251889093803c05267acc7d4e7030d70"
 
 [[package]]
+name = "llm-resilience"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff191e7177066a098c790bb6002f78e6c16b2a4a0e2cdb5a5cdde70310d4c653"
+dependencies = [
+ "parking_lot 0.12.5",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "llm_models_spider"
 version = "0.1.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10276,6 +10287,7 @@ dependencies = [
  "futures-util",
  "itertools 0.14.0",
  "lazy_static",
+ "llm-resilience",
  "metrics",
  "mockall",
  "pin-project",
