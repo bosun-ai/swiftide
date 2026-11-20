@@ -30,6 +30,9 @@ ignore = [
   { id = "RUSTSEC-2026-0440", reason = "astral-tokio-tar is transitive through testcontainers (dev and test-utils only) and has no safe upgrade yet" },
   { id = "RUSTSEC-2026-0441", reason = "pin-utils is transitive through aws-smithy-http and has no safe upgrade yet" },
   { id = "RUSTSEC-2026-0459", reason = "libsqlite3-sys is transitive through spider's sqlx 0.8, which caps it below the patched 0.39; spider only uses SQLite for its own local crawl storage" },
+  { id = "RUSTSEC-2026-0542", reason = "Humantime is unmaintained and is still required through LanceDB and Fluvio" },
+  { id = "RUSTSEC-2026-0543", reason = "Chrono is unmaintained and is still required by Arrow, LanceDB, and SQLx in addition to Swiftide's direct use" },
+  { id = "RUSTSEC-2026-0555", reason = "Chrono-tz is unmaintained and is still required through Arrow and DataFusion" },
 ]
 
 [bans]
