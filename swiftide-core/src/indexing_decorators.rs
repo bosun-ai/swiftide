@@ -61,10 +61,13 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
 
     /// Adds a circuit breaker in front of the retries.
     ///
-    /// After `failure_threshold` transient failures in a row, the breaker opens and requests fail
-    /// immediately with a [`LanguageModelError::PermanentError`] instead of waiting out the full
-    /// backoff schedule. Once the timeout has passed, one probe request is let through at a time;
-    /// enough successful probes close the breaker, a failed probe reopens it with a longer wait.
+    /// After `failure_threshold` consecutive transient failures (a success resets the count), the
+    /// breaker opens and requests fail immediately with a [`LanguageModelError::PermanentError`]
+    /// instead of waiting out the full backoff schedule. Once the timeout has passed, probe
+    /// requests are let through, one at a time by default (the supplied breaker sets the limit,
+    /// see [`CircuitBreaker::with_max_probes`]); enough successful probes close the breaker, a
+    /// failed probe reopens it with a longer wait. A probe that has not finished within
+    /// `max_elapsed_time_sec` counts as failed, so a stalled call cannot hold the probe slot.
     /// Permanent and context length errors are not counted, as they say nothing about the health
     /// of the provider.
     ///
@@ -123,13 +126,16 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
         #[cfg(feature = "circuit-breaker")]
         let mut operation = {
             let circuit_breaker = self.circuit_breaker.clone();
+            let probe_deadline = Duration::from_secs(self.config.max_elapsed_time_sec);
             move || {
                 let circuit_breaker = circuit_breaker.clone();
                 let attempt = operation();
 
                 async move {
                     match circuit_breaker {
-                        Some(circuit_breaker) => guarded(&circuit_breaker, attempt).await,
+                        Some(circuit_breaker) => {
+                            guarded(&circuit_breaker, probe_deadline, attempt).await
+                        }
                         None => attempt.await,
                     }
                 }
@@ -169,17 +175,22 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
 /// Runs one attempt through the circuit breaker.
 ///
 /// Admission and the breaker's state changes happen under one lock in `llm-resilience`: while
-/// half-open only one probe is admitted, and the permit carries the breaker generation it was
-/// admitted in, so a slow request admitted before the breaker opened cannot close it when it
-/// finishes. Dropping the permit (a cancelled attempt, or a non-transient error) records nothing
-/// and frees a probe slot.
+/// half-open only as many probes as the breaker allows (one by default) are admitted, and the
+/// permit carries the breaker generation it was admitted in, so a slow request admitted before
+/// the breaker opened cannot close it when it finishes. Dropping the permit (a cancelled attempt,
+/// or a non-transient error) records nothing and frees a probe slot.
 ///
 /// Only transient errors count as failures; see [`into_backoff_error`]. When this failure opens
 /// the breaker, it is returned as a permanent error so the retry loop stops now instead of
 /// sleeping for another backoff interval first.
+///
+/// A half-open probe that has not finished within `probe_deadline` is cancelled and recorded as
+/// a failure, so a stalled provider call cannot hold the probe slot and keep every other request
+/// turned away.
 #[cfg(feature = "circuit-breaker")]
 async fn guarded<T>(
     circuit_breaker: &CircuitBreaker,
+    probe_deadline: Duration,
     attempt: impl Future<Output = Result<T, LanguageModelError>>,
 ) -> Result<T, LanguageModelError> {
     let Some(permit) = circuit_breaker.try_acquire() else {
@@ -188,7 +199,19 @@ async fn guarded<T>(
         ));
     };
 
-    match attempt.await {
+    let outcome = if permit.is_probe() && !probe_deadline.is_zero() {
+        tokio::time::timeout(probe_deadline, attempt)
+            .await
+            .unwrap_or_else(|_| {
+                Err(LanguageModelError::transient(format!(
+                    "circuit breaker probe did not finish within {probe_deadline:?}"
+                )))
+            })
+    } else {
+        attempt.await
+    };
+
+    match outcome {
         Ok(value) => {
             permit.success();
             Ok(value)
@@ -212,7 +235,10 @@ async fn guarded<T>(
     }
 }
 
-/// The transient error that opened the circuit breaker.
+/// A transient error after which the circuit breaker was open.
+///
+/// Usually this is the failure that opened it. When several clones fail at the same moment,
+/// another one may have opened it first; either way the breaker is open and retrying is pointless.
 #[cfg(feature = "circuit-breaker")]
 #[derive(Debug)]
 struct CircuitOpened(Box<dyn std::error::Error + Send + Sync>);
@@ -227,7 +253,7 @@ impl fmt::Display for CircuitOpened {
 #[cfg(feature = "circuit-breaker")]
 impl std::error::Error for CircuitOpened {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.0.source()
+        Some(self.0.as_ref())
     }
 }
 
@@ -834,8 +860,13 @@ mod tests {
         let started = tokio::time::Instant::now();
         let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
 
-        // One backoff sleep between the two attempts, none after the one that opened the breaker
-        assert_eq!(started.elapsed(), Duration::from_secs(10));
+        // One backoff sleep between the two attempts, none after the one that opened the breaker.
+        // `backoff` can round the interval up by a nanosecond, which tokio rounds to a timer tick.
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= Duration::from_secs(10) && elapsed < Duration::from_secs(11),
+            "{elapsed:?}"
+        );
         assert_eq!(call_count.load(Ordering::SeqCst), 2);
         let Err(LanguageModelError::PermanentError(error)) = result else {
             panic!("expected a permanent error, got {result:?}");
@@ -961,6 +992,55 @@ mod tests {
         assert_eq!(call_count.load(Ordering::SeqCst), 2);
     }
 
+    /// Waits until the provider has been called `calls` times, failing if `task` finishes first.
+    #[cfg(feature = "circuit-breaker")]
+    async fn wait_for_provider_call<T>(
+        call_count: &AtomicUsize,
+        calls: usize,
+        task: &tokio::task::JoinHandle<T>,
+    ) {
+        while call_count.load(Ordering::SeqCst) < calls {
+            assert!(
+                !task.is_finished() || call_count.load(Ordering::SeqCst) >= calls,
+                "request finished before reaching the provider"
+            );
+            tokio::task::yield_now().await;
+        }
+    }
+
+    #[cfg(feature = "circuit-breaker")]
+    #[tokio::test(start_paused = true)]
+    async fn test_circuit_breaker_probe_that_stalls_counts_as_failed() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let model_with_backoff = LanguageModelWithBackOff::new(
+            SlowPrompt {
+                call_count: call_count.clone(),
+            },
+            BackoffConfiguration {
+                max_elapsed_time_sec: 2,
+                ..Default::default()
+            },
+        )
+        .with_circuit_breaker(CircuitBreaker::new(1, 1.0, Duration::ZERO));
+        let breaker = model_with_backoff.circuit_breaker.clone().unwrap();
+        breaker.try_acquire().unwrap().failure();
+        assert_eq!(breaker.status_sync(), CircuitStatus::Open);
+
+        // The probe takes 5 seconds, longer than the 2 second deadline
+        let started = tokio::time::Instant::now();
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
+
+        assert!(started.elapsed() < Duration::from_secs(5));
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+        let Err(LanguageModelError::PermanentError(error)) = result else {
+            panic!("expected a permanent error, got {result:?}");
+        };
+        assert!(error.to_string().contains("did not finish"), "{error}");
+        // The failed probe reopened the breaker and freed its slot
+        assert_eq!(breaker.status_sync(), CircuitStatus::Open);
+        assert_eq!(breaker.probes_in_flight(), 0);
+    }
+
     #[cfg(feature = "circuit-breaker")]
     #[tokio::test(start_paused = true)]
     async fn test_circuit_breaker_ignores_success_admitted_before_it_opened() {
@@ -977,18 +1057,14 @@ mod tests {
         // A request is admitted while the breaker is closed and takes 5 seconds
         let model = model_with_backoff.clone();
         let stale = tokio::spawn(async move { model.prompt(Prompt::from("Test prompt")).await });
-        while call_count.load(Ordering::SeqCst) == 0 {
-            tokio::task::yield_now().await;
-        }
+        wait_for_provider_call(&call_count, 1, &stale).await;
         tokio::time::advance(Duration::from_secs(1)).await;
 
         // Meanwhile the breaker opens and a probe starts
         breaker.trip().await;
         let model = model_with_backoff.clone();
         let probe = tokio::spawn(async move { model.prompt(Prompt::from("Test prompt")).await });
-        while call_count.load(Ordering::SeqCst) == 1 {
-            tokio::task::yield_now().await;
-        }
+        wait_for_provider_call(&call_count, 2, &probe).await;
         assert_eq!(breaker.status_sync(), CircuitStatus::HalfOpen);
 
         // The older request succeeds first; it must not close the breaker
