@@ -115,7 +115,8 @@ impl<T: Chunk> NodeCache for Redis<T> {
                     .arg(100)
                     .query_async(&mut cm)
                     .await?;
-                // Node cache keys end in a canonical (hyphenated) UUID. Preserve message history
+                // Node cache keys are strings (`SET`) ending in a canonical UUID. Preserve
+                // message history, including a UUID-keyed list owned by another instance,
                 // and nested namespaces.
                 let keys: Vec<_> = keys
                     .into_iter()
@@ -128,11 +129,24 @@ impl<T: Chunk> NodeCache for Redis<T> {
                     })
                     .collect();
                 if !keys.is_empty() {
-                    // One non-blocking UNLINK per SCAN page rather than one call per key.
-                    redis::cmd("UNLINK")
-                        .arg(keys)
-                        .query_async::<usize>(&mut cm)
-                        .await?;
+                    // History is a list (`RPUSH`). One TYPE pipeline per page, then one
+                    // UNLINK of the string keys, rather than one call per key.
+                    let mut types = redis::pipe();
+                    for key in &keys {
+                        types.cmd("TYPE").arg(key);
+                    }
+                    let types: Vec<String> = types.query_async(&mut cm).await?;
+                    let keys: Vec<_> = keys
+                        .into_iter()
+                        .zip(types)
+                        .filter_map(|(key, kind)| (kind == "string").then_some(key))
+                        .collect();
+                    if !keys.is_empty() {
+                        redis::cmd("UNLINK")
+                            .arg(&keys)
+                            .query_async::<usize>(&mut cm)
+                            .await?;
+                    }
                 }
                 cursor = next_cursor;
                 if cursor == 0 {
@@ -233,10 +247,16 @@ mod tests {
         assert!(glob_neighbor.get(&nodes[0]).await);
         assert_eq!(
             history_cache.history().await.unwrap(),
-            vec![history_message]
+            vec![history_message.clone()]
         );
         assert_eq!(cache.history().await.unwrap(), vec![message.clone()]);
         cache.clear().await.unwrap();
         assert_eq!(cache.history().await.unwrap(), vec![message]);
+        // The second clear does not own this UUID-keyed history, so the name filter
+        // alone would unlink it. It must still be there.
+        assert_eq!(
+            history_cache.history().await.unwrap(),
+            vec![history_message]
+        );
     }
 }
