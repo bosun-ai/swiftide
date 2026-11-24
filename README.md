@@ -203,6 +203,40 @@ above the 100,000-character budget. Partial pages explain how to continue.
 Contrib features are off by default. See the [crate guide](swiftide-agents-contrib/README.md)
 for examples, defaults, and the features to use when depending on the contrib crate directly.
 
+### Search an external document library over MCP
+
+Use a remote toolbox to give an agent access to an indexed runbook collection in
+[Loom](https://github.com/ClickHouse/loom). Set `LOOM_MCP_URL` to the deployment's
+`/mcp?toolset=assistant` URL so it lists `loom_knowledge_search`. Set `LOOM_TOKEN`
+to a viewer token for the document namespace and use HTTPS for a remote deployment.
+
+Enable Swiftide's `mcp` feature. Add `rmcp` as a direct dependency with
+`client`, `reqwest`, and `transport-streamable-http-client-reqwest`. Match the
+`rmcp` version to the one used by `swiftide-agents`. Swiftide 0.34.0 uses `rmcp`
+2.2, and this branch's version is in [Cargo.toml](Cargo.toml).
+
+```rust
+use std::env;
+
+use rmcp::transport::{
+    StreamableHttpClientTransport, streamable_http_client::StreamableHttpClientTransportConfig,
+};
+use swiftide::agents::tools::mcp::McpToolbox;
+
+async fn loom_toolbox() -> anyhow::Result<McpToolbox> {
+    let config = StreamableHttpClientTransportConfig::with_uri(env::var("LOOM_MCP_URL")?)
+        .auth_header(env::var("LOOM_TOKEN")?);
+    let transport = StreamableHttpClientTransport::from_config(config);
+    let mut toolbox = McpToolbox::try_from_transport(transport).await?;
+    toolbox.with_whitelist(["loom_knowledge_search"]);
+    Ok(toolbox)
+}
+```
+
+Call `.add_toolbox(loom_toolbox().await?)` on the agent builder in the
+[MCP example](examples/agents_mcp_tools.rs). The allowlist exposes only document
+search to the agent. The viewer token supplies the underlying read permissions.
+
 ## Typed Task Graphs
 
 Tasks are Swiftide's orchestration layer. A task is a typed graph of `TaskNode` steps. Each node has
