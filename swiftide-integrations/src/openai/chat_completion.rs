@@ -808,15 +808,15 @@ mod tests {
             let events = if responses {
                 vec![
                     json!({"type": "response.output_text.delta", "sequence_number": 0,
-                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "hel"}),
+                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "hello "}),
                     json!({"type": "response.output_text.delta", "sequence_number": 1,
-                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "lo"}),
+                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "world"}),
                     json!({"type": "response.completed", "sequence_number": 2,
                         "response": {"id": "resp", "object": "response", "created_at": 1,
                             "model": "test", "status": "completed", "output": []}}),
                 ]
             } else {
-                [json!(null), json!("stop")].into_iter().zip(["hel", "lo"]).map(|(finish, text)| json!({
+                [json!(null), json!("stop")].into_iter().zip(["hello ", "world"]).map(|(finish, text)| json!({
                     "id": "chatcmpl-test", "object": "chat.completion.chunk", "created": 1,
                     "model": "test", "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": finish}]
                 })).collect()
@@ -853,10 +853,13 @@ mod tests {
                 .collect::<Vec<_>>()
                 .await;
             assert_eq!(collected.len(), 1);
-            assert_eq!(collected[0].as_ref().unwrap().message(), Some("hello"));
+            assert_eq!(
+                collected[0].as_ref().unwrap().message(),
+                Some("hello world")
+            );
             assert_eq!(
                 client.complete(&request).await.unwrap().message(),
-                Some("hello")
+                Some("hello world")
             );
 
             for full in [true, false] {
@@ -868,12 +871,12 @@ mod tests {
                     .await;
                 assert_eq!(chunks.len(), 3);
                 let first = chunks[0].as_ref().unwrap();
-                assert_eq!(first.message(), full.then_some("hel"));
+                assert_eq!(first.message(), full.then_some("hello "));
                 assert_eq!(
                     first.delta.as_ref().unwrap().message_chunk.as_deref(),
-                    Some("hel")
+                    Some("hello ")
                 );
-                assert_eq!(chunks[2].as_ref().unwrap().message(), Some("hello"));
+                assert_eq!(chunks[2].as_ref().unwrap().message(), Some("hello world"));
             }
         }
     }
