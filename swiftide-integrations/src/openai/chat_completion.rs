@@ -318,9 +318,17 @@ impl<
                                 }
                             }
                             if let Some(usage) = usage {
-                                // The usage chunk contains totals, including cache/reasoning
-                                // details needed by billing; it is not an incremental delta.
-                                state.usage = Some(Usage::from(usage));
+                                let usage = Usage::from(usage);
+                                state.append_usage_delta(
+                                    usage.prompt_tokens,
+                                    usage.completion_tokens,
+                                    usage.total_tokens,
+                                );
+                                if let (Some(details), Some(state_usage)) =
+                                    (usage.details, state.usage.as_mut())
+                                {
+                                    state_usage.details = Some(details);
+                                }
                             }
 
                             let snapshot = if stream_full {
@@ -1659,6 +1667,59 @@ data: [DONE]\n\n";
         let last = results.last().unwrap().as_ref().unwrap();
         assert_eq!(last.message(), Some("Hi"));
         assert_eq!(last.usage.as_ref().map(|u| u.total_tokens), Some(3));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_keeps_usage_details() {
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\
+\n\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15,\"prompt_tokens_details\":{\"cached_tokens\":4},\"completion_tokens_details\":{\"reasoning_tokens\":2}}}\n\
+\n\
+data: [DONE]\n\n";
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o-mini")
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello".into())])
+            .build()
+            .unwrap();
+
+        let results: Vec<_> = openai.complete_stream(&req).await.collect().await;
+        let last = results.last().unwrap().as_ref().unwrap();
+        let usage = last.usage.as_ref().expect("usage present");
+        assert_eq!(usage.total_tokens, 15);
+
+        let details = usage.details.as_ref().expect("usage details");
+        assert_eq!(
+            details
+                .prompt_tokens_details
+                .as_ref()
+                .and_then(|d| d.cached_tokens),
+            Some(4)
+        );
+        assert_eq!(
+            details
+                .completion_tokens_details
+                .as_ref()
+                .and_then(|d| d.reasoning_tokens),
+            Some(2)
+        );
     }
 
     #[test_log::test(tokio::test)]
