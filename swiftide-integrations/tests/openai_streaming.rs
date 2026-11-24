@@ -6,6 +6,7 @@ use futures_util::StreamExt as _;
 use serde_json::{Value, json};
 use swiftide_core::{
     ChatCompletion, DynStructuredPrompt, SimplePrompt,
+    chat_completion::errors::LanguageModelError,
     chat_completion::{ChatCompletionRequest, ChatMessage},
 };
 use swiftide_integrations::openai::OpenAI;
@@ -170,5 +171,165 @@ async fn streaming_prompt_errors_are_returned_instead_of_partial_success() {
                 .is_err()
         );
         assert_eq!(server.received_requests().await.unwrap().len(), 3);
+    }
+}
+
+async fn assert_unfinished_stream_fails(responses: bool, events: &str) {
+    let (server, client) = client(responses).await;
+    server.reset().await;
+    Mock::given(method("POST"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(events),
+        )
+        .mount(&server)
+        .await;
+    let request = ChatCompletionRequest::builder()
+        .messages(vec![ChatMessage::User("answer".into())])
+        .build()
+        .unwrap();
+    assert!(matches!(
+        client.complete(&request).await,
+        Err(LanguageModelError::TransientError(_))
+    ));
+    assert!(matches!(
+        client.prompt("answer".into()).await,
+        Err(LanguageModelError::TransientError(_))
+    ));
+    assert!(matches!(
+        client
+            .structured_prompt_dyn("answer".into(), schemars::schema_for!(Value))
+            .await,
+        Err(LanguageModelError::TransientError(_))
+    ));
+    let items = client
+        .complete_stream(&request)
+        .await
+        .collect::<Vec<_>>()
+        .await;
+    assert!(matches!(
+        items.last(),
+        Some(Err(LanguageModelError::TransientError(_)))
+    ));
+}
+
+#[tokio::test]
+async fn chat_partial_content_followed_by_eof_is_not_a_successful_completion() {
+    let partial = json!({
+        "id": "chatcmpl-test", "object": "chat.completion.chunk", "created": 1,
+        "model": "test-model", "choices": [{"index": 0,
+            "delta": {"role": "assistant", "content": "{\"answer\":42}"}, "finish_reason": null}]
+    });
+    assert_unfinished_stream_fails(false, &format!("data: {partial}\n\n")).await;
+    assert_unfinished_stream_fails(false, &format!("data: {partial}\n\ndata: [DONE]\n\n")).await;
+}
+
+#[tokio::test]
+async fn responses_partial_content_followed_by_eof_is_not_a_successful_completion() {
+    let partial = json!({"type": "response.output_text.delta", "sequence_number": 0,
+        "item_id": "msg-test", "output_index": 0, "content_index": 0, "delta": "{\"answer\":42}"});
+    assert_unfinished_stream_fails(true, &format!("data: {partial}\n\n")).await;
+}
+
+#[tokio::test]
+async fn empty_streams_are_transient_errors_on_both_apis() {
+    for responses in [false, true] {
+        assert_unfinished_stream_fails(responses, "").await;
+    }
+}
+
+#[tokio::test]
+async fn a_chat_tool_only_finish_is_a_valid_collected_completion() {
+    let (server, client) = client(false).await;
+    server.reset().await;
+    let chunk = json!({
+        "id": "chatcmpl-test", "object": "chat.completion.chunk", "created": 1,
+        "model": "test-model", "choices": [{"index": 0, "delta": {"role": "assistant",
+            "tool_calls": [{"index": 0, "id": "call-test", "type": "function",
+                "function": {"name": "lookup", "arguments": "{\"q\":\"rust\"}"}}]},
+            "finish_reason": "tool_calls"}]
+    });
+    Mock::given(method("POST"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(format!("data: {chunk}\n\ndata: [DONE]\n\n")),
+        )
+        .mount(&server)
+        .await;
+    let request = ChatCompletionRequest::builder()
+        .messages(vec![ChatMessage::User("lookup rust".into())])
+        .build()
+        .unwrap();
+    let response = client.complete(&request).await.unwrap();
+    assert!(response.message().is_none());
+    let calls = response.tool_calls().unwrap();
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].name(), "lookup");
+    assert_eq!(calls[0].args(), Some("{\"q\":\"rust\"}"));
+}
+
+#[tokio::test]
+async fn responses_tool_arguments_are_not_duplicated_after_reasoning() {
+    for output_index in [0, 1] {
+        let (server, client) = client(true).await;
+        server.reset().await;
+        let function = json!({"type": "function_call", "id": "fc-test", "call_id": "call-test",
+            "name": "lookup", "arguments": "{\"q\":\"rust\"}", "status": "completed"});
+        let reasoning = json!({"type": "reasoning", "id": "rs-test", "summary": []});
+        let mut events = vec![];
+        let mut output = vec![];
+        if output_index == 1 {
+            events.push(
+                json!({"type": "response.output_item.added", "output_index": 0, "item": reasoning}),
+            );
+            output.push(reasoning);
+        }
+        let mut added = function.clone();
+        added["arguments"] = "".into();
+        added["status"] = "in_progress".into();
+        events.extend([
+            json!({"type": "response.output_item.added", "output_index": output_index, "item": added}),
+            json!({"type": "response.function_call_arguments.delta", "output_index": output_index,
+                "item_id": "fc-test", "delta": "{\"q\":"}),
+            json!({"type": "response.function_call_arguments.delta", "output_index": output_index,
+                "item_id": "fc-test", "delta": "\"rust\"}"}),
+            json!({"type": "response.function_call_arguments.done", "output_index": output_index,
+                "item_id": "fc-test", "name": "lookup", "arguments": "{\"q\":\"rust\"}"}),
+            json!({"type": "response.output_item.done", "output_index": output_index, "item": function}),
+        ]);
+        output.push(function);
+        events.push(json!({"type": "response.completed", "response": {
+            "id": "resp-test", "object": "response", "created_at": 1, "model": "test-model",
+            "status": "completed", "output": output
+        }}));
+        let mut body = String::new();
+        for (sequence, mut event) in events.into_iter().enumerate() {
+            event["sequence_number"] = sequence.into();
+            write!(body, "data: {event}\n\n").unwrap();
+        }
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("lookup rust".into())])
+            .build()
+            .unwrap();
+        let result = client.complete(&request).await.unwrap();
+        assert!(result.message().is_none());
+        let calls = result.tool_calls().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].name(), "lookup");
+        assert_eq!(
+            calls[0].args(),
+            Some("{\"q\":\"rust\"}"),
+            "output index {output_index}"
+        );
     }
 }

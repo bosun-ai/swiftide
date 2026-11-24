@@ -11,7 +11,7 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
-use super::chat_completion::collect_stream;
+use super::chat_completion::{StreamOutput, collect_stream};
 use super::responses_api::{build_responses_request_from_prompt, response_to_chat_completion};
 use crate::openai::openai_error_to_language_model_error;
 
@@ -91,13 +91,16 @@ impl<
 
         // Send the request to the OpenAI API and await the response.
         // Move the request; we logged key fields above if needed.
-        let tracking_request = request.clone();
         if self.streaming {
-            return collect_stream(self.stream_chat_request(request).await?)
-                .await?
-                .message
-                .ok_or_else(|| LanguageModelError::permanent("Expected content in response"));
+            return collect_stream(
+                self.stream_chat_request(request, StreamOutput::Final)
+                    .await?,
+            )
+            .await?
+            .message
+            .ok_or_else(|| LanguageModelError::permanent("Expected content in response"));
         }
+        let tracking_request = request.clone();
         let response = self
             .client
             .chat()
@@ -147,10 +150,13 @@ impl<
         let create_request = build_responses_request_from_prompt(self, prompt_text)?;
 
         if self.streaming {
-            return collect_stream(self.stream_responses_request(create_request).await?)
-                .await?
-                .message
-                .ok_or_else(|| LanguageModelError::permanent("Expected content in response"));
+            return collect_stream(
+                self.stream_responses_request(create_request, StreamOutput::Final)
+                    .await?,
+            )
+            .await?
+            .message
+            .ok_or_else(|| LanguageModelError::permanent("Expected content in response"));
         }
 
         let response = self
