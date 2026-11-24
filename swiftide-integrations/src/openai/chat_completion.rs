@@ -33,6 +33,17 @@ use super::tool_schema::OpenAiToolSchema;
 use super::{GenericOpenAI, openai_error_to_language_model_error, request_body_with_extra_body};
 use tracing_futures::Instrument;
 
+/// Both adapters emit a complete snapshot last, even with delta-only streaming enabled.
+pub(super) async fn collect_stream(
+    mut stream: ChatCompletionStream,
+) -> Result<ChatCompletionResponse, LanguageModelError> {
+    let mut last = None;
+    while let Some(response) = stream.next().await {
+        last = Some(response?);
+    }
+    last.ok_or_else(|| LanguageModelError::transient("Model returned an empty stream"))
+}
+
 #[async_trait]
 impl<
     C: async_openai::config::Config
@@ -56,6 +67,9 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        if self.streaming {
+            return collect_stream(self.complete_stream(request).await).await;
+        }
         if self.is_responses_api_enabled() {
             return self.complete_via_responses_api(request).await;
         }
@@ -195,9 +209,6 @@ impl<
             .clone()
             .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
 
-        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
-        let _ = &model_name;
-
         let messages = request
             .messages()
             .iter()
@@ -209,11 +220,6 @@ impl<
             .chat_completion_request_defaults()
             .model(&model_name)
             .messages(messages)
-            .stream(true)
-            .stream_options(ChatCompletionStreamOptions {
-                include_usage: Some(true),
-                include_obfuscation: None,
-            })
             .to_owned();
 
         if !request.tools_spec().is_empty() {
@@ -239,6 +245,20 @@ impl<
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
+        self.stream_chat_request(openai_request).await
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub(super) async fn stream_chat_request(
+        &self,
+        mut openai_request: async_openai::types::chat::CreateChatCompletionRequest,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let model_name = openai_request.model.clone();
+        openai_request.stream = Some(true);
+        openai_request.stream_options = Some(ChatCompletionStreamOptions {
+            include_usage: Some(true),
+            include_obfuscation: None,
+        });
         let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
         let response_stream: ChatCompletionResponseStream = self
             .client
@@ -298,12 +318,9 @@ impl<
                                 }
                             }
                             if let Some(usage) = usage {
-                                let usage = Usage::from(usage);
-                                state.append_usage_delta(
-                                    usage.prompt_tokens,
-                                    usage.completion_tokens,
-                                    usage.total_tokens,
-                                );
+                                // The usage chunk contains totals, including cache/reasoning
+                                // details needed by billing; it is not an incremental delta.
+                                state.usage = Some(Usage::from(usage));
                             }
 
                             let snapshot = if stream_full {
@@ -401,15 +418,15 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionStream, LanguageModelError> {
-        #[allow(unused_variables)]
-        let model_name = self
-            .default_options
-            .prompt_model
-            .clone()
-            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
+        let create_request = build_responses_request_from_chat(self, request)?;
+        self.stream_responses_request(create_request).await
+    }
 
-        let mut create_request = build_responses_request_from_chat(self, request)?;
-
+    pub(super) async fn stream_responses_request(
+        &self,
+        mut create_request: async_openai::types::responses::CreateResponse,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let model_name = create_request.model.clone().unwrap_or_default();
         create_request.stream = Some(true);
 
         let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;

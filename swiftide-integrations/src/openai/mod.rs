@@ -107,6 +107,12 @@ pub struct GenericOpenAI<
     #[builder(default = true)]
     pub stream_full: bool,
 
+    /// Use streaming transport for `complete`, `prompt`, and `structured_prompt_dyn`,
+    /// collecting the final response before returning. Explicit `complete_stream` calls
+    /// always stream. Disabled by default for compatibility with existing integrations.
+    #[builder(default)]
+    pub streaming: bool,
+
     #[cfg(feature = "metrics")]
     #[builder(default)]
     /// Optional metadata to attach to metrics emitted by this client.
@@ -174,6 +180,7 @@ impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debu
             .field("client", &self.client)
             .field("default_options", &self.default_options)
             .field("stream_full", &self.stream_full)
+            .field("streaming", &self.streaming)
             .field("use_responses_api", &self.use_responses_api)
             .finish_non_exhaustive()
     }
