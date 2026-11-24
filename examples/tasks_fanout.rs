@@ -5,6 +5,7 @@ use swiftide::tasks::{ConcurrencyModel, JoinInput, NodeError, Task, TaskRunOutco
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // ANCHOR: nodes
     let mut task = Task::new().with_default_concurrency_model(ConcurrencyModel::Parallel);
 
     let start =
@@ -20,7 +21,9 @@ async fn main() -> Result<()> {
     );
 
     task.starts_with(start);
+    // ANCHOR_END: nodes
 
+    // ANCHOR: transitions
     // The fan-out transition defines the branch group and the join that waits for that group.
     task.register_transition(start, move |input| {
         Transition::fan_out(&increment, input)
@@ -33,7 +36,9 @@ async fn main() -> Result<()> {
     task.register_transition(increment, join.join())?;
     task.register_transition(double, join.join())?;
     task.register_transition(join, task.transitions_to_finish())?;
+    // ANCHOR_END: transitions
 
+    // ANCHOR: run
     match task.run(5).await? {
         TaskRunOutcome::Completed(result) => {
             assert_eq!(result, 16);
@@ -41,6 +46,7 @@ async fn main() -> Result<()> {
         }
         TaskRunOutcome::Paused => println!("Task paused"),
     }
+    // ANCHOR_END: run
 
     Ok(())
 }

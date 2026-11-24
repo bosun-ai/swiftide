@@ -12,11 +12,8 @@
 //!     .then(transformer)
 //!     .store(storage);
 //!
-//! // Run pipeline
-//! pipeline.run().await?;
-//!
-//! // Get statistics
-//! let stats = pipeline.stats();
+//! // Running the pipeline returns its final statistics
+//! let stats = pipeline.run().await?;
 //! println!("Processed {} nodes in {:?}", stats.nodes_processed, stats.duration());
 //! ```
 
@@ -106,10 +103,11 @@ impl PipelineStats {
     ///
     /// If the pipeline has not started, returns `None`.
     /// If the pipeline has started but not completed, returns the elapsed time since start.
+    /// Never panics: a completion recorded before the start yields a zero duration.
     #[must_use]
     pub fn duration(&self) -> Option<Duration> {
         match (self.started_at, self.completed_at) {
-            (Some(start), Some(end)) => Some(end.duration_since(start)),
+            (Some(start), Some(end)) => Some(end.saturating_duration_since(start)),
             (Some(start), None) => Some(start.elapsed()),
             _ => None,
         }
@@ -189,9 +187,13 @@ impl StatsCollector {
     }
 
     /// Marks the pipeline as started
+    ///
+    /// Clears any earlier completion, so a restarted collector reports itself as running.
     pub fn start(&self) {
         let mut started = lock_recover(&self.started_at);
+        let mut completed = lock_recover(&self.completed_at);
         *started = Some(Instant::now());
+        *completed = None;
     }
 
     /// Marks the pipeline as completed
@@ -362,6 +364,33 @@ mod tests {
         // Original should have updated value
         let original_stats = collector.get_stats();
         assert_eq!(original_stats.nodes_processed, 8);
+    }
+
+    /// A completion recorded before the start yields a zero duration instead of panicking.
+    #[test]
+    fn test_duration_saturates_when_completed_before_started() {
+        let completed_at = Instant::now();
+        let stats = PipelineStats {
+            started_at: Some(completed_at + Duration::from_secs(1)),
+            completed_at: Some(completed_at),
+            ..PipelineStats::default()
+        };
+
+        assert_eq!(stats.duration(), Some(Duration::ZERO));
+    }
+
+    /// Restarting a completed collector reports it as running again.
+    #[test]
+    fn test_restart_clears_previous_completion() {
+        let collector = StatsCollector::new();
+        collector.start();
+        collector.complete();
+
+        collector.start();
+
+        let stats = collector.get_stats();
+        assert_eq!(stats.completed_at, None);
+        assert!(stats.duration().is_some());
     }
 
     #[test]

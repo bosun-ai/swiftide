@@ -69,13 +69,17 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
     }
 
     async fn clear(&self) -> anyhow::Result<()> {
-        let sql = format!("DROP TABLE IF EXISTS {}", self.cache_table);
+        self.lazy_create_cache()
+            .await
+            .context("failed to create cache table")?;
+
+        let sql = format!("DELETE FROM {}", self.cache_table);
         let lock = self.connection.lock().unwrap();
         let mut stmt = lock
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for cache clear")?;
 
-        stmt.execute([]).context("failed to delete cache table")?;
+        stmt.execute([]).context("failed to clear cache table")?;
 
         Ok(())
     }
@@ -108,9 +112,19 @@ mod tests {
         let duckdb = setup_duckdb();
         let node = TextNode::new("test_clear");
 
+        // Clearing an unused cache and clearing twice must both succeed.
+        duckdb.clear().await.unwrap();
+        duckdb.clear().await.unwrap();
+
+        for _ in 0..2 {
+            duckdb.set(&node).await;
+            assert!(duckdb.get(&node).await);
+            duckdb.clear().await.unwrap();
+            assert!(!duckdb.get(&node).await);
+            duckdb.clear().await.unwrap();
+        }
+
         duckdb.set(&node).await;
         assert!(duckdb.get(&node).await);
-        duckdb.clear().await.unwrap();
-        assert!(!duckdb.get(&node).await);
     }
 }

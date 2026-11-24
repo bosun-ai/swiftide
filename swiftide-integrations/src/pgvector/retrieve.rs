@@ -230,7 +230,7 @@ mod tests {
         let mut query = Query::<states::Pending>::new("test_query");
         query.embedding = Some(vec![1.0; 384]);
 
-        let search_strategy = SimilaritySingleEmbedding::<()>::default();
+        let search_strategy = SimilaritySingleEmbedding::default();
         let result = test_context
             .pgv_storage
             .retrieve(&search_strategy, query.clone())
@@ -291,7 +291,7 @@ mod tests {
         let mut query = Query::<states::Pending>::new("test_query");
         query.embedding = Some(vec![1.0; 384]);
 
-        let search_strategy = SimilaritySingleEmbedding::<()>::default();
+        let search_strategy = SimilaritySingleEmbedding::default();
         let result = test_context
             .pgv_storage
             .retrieve(&search_strategy, query.clone())

@@ -13,7 +13,7 @@ use super::Anthropic;
 
 #[async_trait]
 impl SimplePrompt for Anthropic {
-    #[tracing::instrument(skip_all, err)]
+    #[tracing::instrument(skip_all, err(level = "warn"))]
     async fn prompt(
         &self,
         prompt: swiftide_core::prompt::Prompt,

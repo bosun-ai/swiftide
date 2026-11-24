@@ -21,6 +21,7 @@ use swiftide::{
 };
 use tokio::sync::Mutex;
 
+// ANCHOR: node
 /// A domain-specific task step around an `Agent`.
 ///
 /// We do not use `TaskAgent` here on purpose. `TaskAgent` is useful when you simply want
@@ -123,16 +124,22 @@ impl TaskNode for BriefingAgent {
         Ok(serde_json::from_value(payload.clone())?)
     }
 }
+// ANCHOR_END: node
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_embed_model("text-embeddings-3-small")
         .default_prompt_model("gpt-4o-mini")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: tools
     let stop_tool = StopWithArgs::with_parameters_schema(schema_for!(BriefingDecision));
+    // ANCHOR_END: tools
 
+    // ANCHOR: agent
     let agent = agents::Agent::builder()
         .llm(&openai)
         .without_default_stop_tool()
@@ -144,7 +151,9 @@ async fn main() -> Result<()> {
              Fill `next_steps` with concrete follow-up actions.",
         )
         .build()?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: task
     // Tasks are typed from input to output. This task starts with a `Prompt` and finishes with the
     // final teammate-facing hand-off note.
     let mut task: Task<Prompt, String> = Task::new();
@@ -184,7 +193,9 @@ async fn main() -> Result<()> {
 
     // Step 3: the rendered hand-off note becomes the task output.
     task.register_transition(handoff_prompt_id, task.transitions_to_finish())?;
+    // ANCHOR_END: task
 
+    // ANCHOR: run
     // The input prompt is still a normal Swiftide `Prompt`, so it can use templating and context.
     let request = Prompt::from("Create a short operations brief about this topic: {{topic}}")
         .with_context_value(
@@ -200,6 +211,7 @@ async fn main() -> Result<()> {
             println!("Task paused");
         }
     }
+    // ANCHOR_END: run
 
     Ok(())
 }

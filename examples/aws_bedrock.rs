@@ -22,12 +22,15 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let aws_bedrock = integrations::aws_bedrock_v2::AwsBedrock::builder()
         .default_prompt_model("global.anthropic.claude-haiku-4-5-20251001-v1:0")
         .build()?;
 
     let memory_storage = MemoryStorage::default();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new("./README.md"))
         .log_nodes()
         .then_chunk(transformers::ChunkMarkdown::from_chunk_range(100..512))
@@ -36,7 +39,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .log_all()
         .run()
         .await?;
+    // ANCHOR_END: pipeline
 
+    // ANCHOR: output
     println!("Summaries:");
     println!(
         "{}",
@@ -48,5 +53,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>()
             .join("\n---\n")
     );
+    // ANCHOR_END: output
     Ok(())
 }

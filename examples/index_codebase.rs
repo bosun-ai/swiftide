@@ -31,6 +31,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai_client = integrations::openai::OpenAI::builder()
         .default_embed_model("text-embedding-3-small")
         .default_prompt_model("gpt-3.5-turbo")
@@ -45,7 +46,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_deref()
         .unwrap_or("redis://localhost:6379")
         .to_owned();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(Redis::try_from_url(redis_url, "swiftide-examples")?)
         .then(MetadataQACode::new(openai_client.clone()))
@@ -63,5 +66,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }

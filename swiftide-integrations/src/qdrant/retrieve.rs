@@ -216,7 +216,7 @@ mod tests {
         let mut query = Query::<states::Pending>::new("test_query");
         query.embedding = Some(vec![1.0; 384]);
 
-        let search_strategy = SimilaritySingleEmbedding::<()>::default();
+        let search_strategy = SimilaritySingleEmbedding::default();
         let result = qdrant_client
             .retrieve(&search_strategy, query.clone())
             .await

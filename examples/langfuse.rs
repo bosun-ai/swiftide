@@ -24,6 +24,7 @@ use tracing_subscriber::{
 async fn main() -> Result<()> {
     println!("Hello, langfuse!");
 
+    // ANCHOR: setup
     let fmt_layer = tracing_subscriber::fmt::layer()
         .compact()
         .with_target(false)
@@ -38,14 +39,18 @@ async fn main() -> Result<()> {
         .with(vec![fmt_layer, langfuse_layer]);
 
     registry.init();
+    // ANCHOR_END: setup
 
+    // ANCHOR: run
     prompt_openai().await?;
+    // ANCHOR_END: run
 
     Ok(())
 }
 
 #[tracing::instrument]
 async fn prompt_openai() -> Result<()> {
+    // ANCHOR: prompt
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-5")
         .build()
@@ -56,6 +61,7 @@ async fn prompt_openai() -> Result<()> {
         .await?;
 
     println!("The capital of France is {paris}");
+    // ANCHOR_END: prompt
 
     Ok(())
 }

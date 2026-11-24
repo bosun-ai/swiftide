@@ -28,11 +28,14 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let redis_url = std::env::var("REDIS_URL")
         .as_deref()
         .unwrap_or("redis://localhost:6379")
         .to_owned();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
@@ -48,5 +51,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }

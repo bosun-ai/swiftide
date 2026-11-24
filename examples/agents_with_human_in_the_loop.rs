@@ -22,6 +22,7 @@ use swiftide::{
 };
 use tracing_subscriber::EnvFilter;
 
+// ANCHOR: tools
 #[swiftide::tool(
     description = "Guess a number",
     param(name = "number", description = "Number to guess")
@@ -38,6 +39,7 @@ async fn guess_a_number(
         Ok("Try again!".into())
     }
 }
+// ANCHOR_END: tools
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,16 +50,21 @@ async fn main() -> Result<()> {
 
     println!("Hello, agents!");
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-4o")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: approval
     // ApprovalRequired is a simple wrapper. You can also implement your own approval
     // flows by returning a `ToolOutput::FeedbackRequired` in a tool,
     // you can then use `has_received_feedback` and `received_feedback` on the context
     // to build your custom workflow.
     let guess_with_approval = ApprovalRequired::new(guess_a_number());
+    // ANCHOR_END: approval
 
+    // ANCHOR: agent
     let mut agent = agents::Agent::builder()
         .llm(&openai)
         .tools(vec![guess_with_approval])
@@ -69,7 +76,9 @@ async fn main() -> Result<()> {
         })
         .limit(5)
         .build()?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: run
     // First query the agent, the agent will stop with a reason that feedback is required
     agent
         .query("Guess a number between 0 and 100 using the `guess_a_number` tool")
@@ -93,6 +102,7 @@ async fn main() -> Result<()> {
 
     // Run the agent again and it will pick up where it stopped.
     agent.run().await.unwrap();
+    // ANCHOR_END: run
 
     Ok(())
 }

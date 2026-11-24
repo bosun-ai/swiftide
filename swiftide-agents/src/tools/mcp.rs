@@ -11,7 +11,8 @@ use async_trait::async_trait;
 use rmcp::RoleClient;
 use rmcp::ServiceExt;
 use rmcp::model::{
-    CallToolRequestParams, ClientCapabilities, ClientInfo, Implementation, InitializeRequestParams,
+    CallToolRequestParams, ClientCapabilities, ClientConfig, Implementation,
+    InitializeRequestParams,
 };
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
@@ -35,7 +36,7 @@ pub enum ToolFilter {
 /// Connects to an MCP server and provides tools at runtime to the agent.
 ///
 /// WARN: The rmcp has a quirky feature to serve from `()`. This does not work; serve from
-/// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
+/// `ClientConfig` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
     service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParams>>>>,
@@ -74,6 +75,8 @@ impl McpToolbox {
     }
 
     /// Apply an optional name to the toolbox
+    ///
+    /// If the server does not report a name, its tools are prefixed with this name instead.
     pub fn with_name(&mut self, name: impl Into<String>) -> &mut Self {
         self.name = Some(name.into());
         self
@@ -115,8 +118,8 @@ impl McpToolbox {
         }
     }
 
-    fn default_client_info() -> ClientInfo {
-        ClientInfo::new(
+    fn default_client_info() -> ClientConfig {
+        ClientConfig::new(
             ClientCapabilities::default(),
             Implementation::new("swiftide", env!("CARGO_PKG_VERSION")),
         )
@@ -165,14 +168,13 @@ impl ToolBox for McpToolbox {
             .context("Failed to list tools")?;
 
         let filter = self.filter.as_ref();
-        let mut server_name = peer_info
-            .as_ref()
-            .map_or("mcp", |info| info.server_info.name.as_str())
-            .trim()
-            .to_owned();
-        if server_name.is_empty() {
-            server_name = "mcp".into();
-        }
+        let server_name = tool_name_prefix(
+            peer_info
+                .as_ref()
+                .and_then(|info| info.server_info.as_ref())
+                .map(|server| server.name.as_str()),
+            self.name.as_deref(),
+        );
 
         let tools = tools
             .into_iter()
@@ -198,7 +200,7 @@ impl ToolBox for McpToolbox {
                 // Preallocate to avoid repeated string growth.
                 let mut registered_name =
                     String::with_capacity(server_name.len() + tool.name.len() + 1);
-                registered_name.push_str(&server_name);
+                registered_name.push_str(server_name);
                 registered_name.push(':');
                 registered_name.push_str(&tool.name);
 
@@ -234,6 +236,20 @@ impl ToolBox for McpToolbox {
     fn name(&self) -> Cow<'_, str> {
         self.name().into()
     }
+}
+
+/// Prefix for the names the tools of an MCP server are registered under.
+///
+/// Uses the name the server reports. Servers that report no name fall back to the toolbox name
+/// set with [`McpToolbox::with_name`], so several unnamed servers can still be told apart, and
+/// then to `mcp`.
+fn tool_name_prefix<'a>(server_name: Option<&'a str>, toolbox_name: Option<&'a str>) -> &'a str {
+    [server_name, toolbox_name]
+        .into_iter()
+        .flatten()
+        .map(str::trim)
+        .find(|name| !name.is_empty())
+        .unwrap_or("mcp")
 }
 
 #[derive(Clone)]
@@ -334,6 +350,23 @@ mod tests {
 
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
     const EXPECTED_PREFIX: &str = "rmcp";
+
+    #[test]
+    fn tools_are_prefixed_with_the_server_name() {
+        assert_eq!(tool_name_prefix(Some("github"), Some("tickets")), "github");
+    }
+
+    #[test]
+    fn unnamed_servers_are_prefixed_with_the_toolbox_name() {
+        assert_eq!(tool_name_prefix(None, Some("tickets")), "tickets");
+        assert_eq!(tool_name_prefix(Some("  "), Some("tickets")), "tickets");
+    }
+
+    #[test]
+    fn unnamed_servers_without_a_toolbox_name_are_prefixed_with_mcp() {
+        assert_eq!(tool_name_prefix(None, None), "mcp");
+        assert_eq!(tool_name_prefix(Some(""), Some(" ")), "mcp");
+    }
 
     #[allow(clippy::similar_names)]
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
@@ -481,7 +514,7 @@ mod tests {
         use rmcp::{
             ErrorData as McpError, ServerHandler,
             handler::server::{tool::ToolRouter, wrapper::Parameters},
-            model::{CallToolResult, ContentBlock, ServerCapabilities, ServerInfo},
+            model::{CallToolResult, ContentBlock, ServerCapabilities, ServerConfig},
             schemars, tool, tool_handler,
         };
 
@@ -546,8 +579,8 @@ mod tests {
 
         #[tool_handler]
         impl ServerHandler for Calculator {
-            fn get_info(&self) -> ServerInfo {
-                let mut info = ServerInfo::default();
+            fn get_info(&self) -> ServerConfig {
+                let mut info = ServerConfig::default();
                 info.instructions = Some("A simple calculator".into());
                 info.capabilities = ServerCapabilities::builder().enable_tools().build();
                 info

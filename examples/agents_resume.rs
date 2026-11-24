@@ -6,15 +6,20 @@ use swiftide::agents::{self, DefaultContext};
 async fn main() -> Result<()> {
     println!("Hello, agents!");
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_embed_model("text-embeddings-3-small")
         .default_prompt_model("gpt-4o-mini")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: agent
     let mut first_agent = agents::Agent::builder().llm(&openai).build()?;
 
     first_agent.query("Say hello!").await?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: history
     // Let's store the messages in a database, retrieve them back, and start a new agent
     let stored_history = serde_json::to_string(&first_agent.history().await?)?;
     let retrieved_history: Vec<_> = serde_json::from_str(&stored_history)?;
@@ -23,7 +28,9 @@ async fn main() -> Result<()> {
         .with_existing_messages(retrieved_history)
         .await?
         .to_owned();
+    // ANCHOR_END: history
 
+    // ANCHOR: resume
     let mut second_agent = agents::Agent::builder()
         .llm(&openai)
         .context(restored_context)
@@ -33,6 +40,7 @@ async fn main() -> Result<()> {
         .build()?;
 
     second_agent.query("What did you say?").await?;
+    // ANCHOR_END: resume
 
     Ok(())
 }

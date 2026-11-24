@@ -19,6 +19,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     // Ensure all batching is consistent
     let batch_size = 64;
 
@@ -40,7 +41,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_sparse_vector(EmbeddedField::Combined)
         .collection_name("swiftide-hybrid-example")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: indexing
     indexing::Pipeline::from_loader(FileLoader::new("swiftide-core/").with_extensions(&["rs"]))
         // Chunk fairly large as the context window is big
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
@@ -56,7 +59,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then_store_with(qdrant.clone())
         .run()
         .await?;
+    // ANCHOR_END: indexing
 
+    // ANCHOR: query
     // Use sophisticated model for our query
     let openai = openai::OpenAI::builder()
         .default_prompt_model("gpt-4o")
@@ -66,10 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let query_pipeline = query::Pipeline::from_search_strategy(
         // Return a large amount of documents because we have a large context window
         // By default it uses the Combined fields, no need to configure
-        HybridSearch::default()
-            .with_top_n(20)
-            .with_top_k(20)
-            .to_owned(),
+        HybridSearch::default().with_top_n(20).with_top_k(20),
     )
     // Generate subquestions on the initial query to increase our query coverage
     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
@@ -84,13 +86,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Answer with Simple, which either takes the documents as is (in this case), or any
     // transformations applied after querying
     .then_answer(answers::Simple::from_client(openai.clone()));
+    // ANCHOR_END: query
 
+    // ANCHOR: run
     let answer = query_pipeline
         .query("What are the different pipelines in Swiftide and how do they work? Provide an elaborate answer with examples.")
         .await
         .unwrap();
 
     println!("{}", answer.answer());
+    // ANCHOR_END: run
 
     // ## Different Pipelines in Swiftide and How They Work
     //

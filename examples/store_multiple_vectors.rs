@@ -34,11 +34,14 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai_client = integrations::openai::OpenAI::builder()
         .default_embed_model("text-embedding-3-small")
         .default_prompt_model("gpt-4o")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new("LICENSE"))
         .with_concurrency(1)
         .with_embed_mode(EmbedMode::PerField)
@@ -69,5 +72,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }

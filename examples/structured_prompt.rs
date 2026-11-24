@@ -5,10 +5,13 @@ use swiftide::{integrations, traits::DynStructuredPrompt, traits::StructuredProm
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // ANCHOR: setup
     let client = integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-5-mini")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: schema
     // Note that deny unknown fields is required. If you get an error on 'additionalProperties' to
     // be required, and false, this is what is missing.
     #[derive(Deserialize, JsonSchema, Serialize, Debug)]
@@ -16,7 +19,9 @@ async fn main() -> Result<()> {
     struct MyResponse {
         questions: Vec<String>,
     }
+    // ANCHOR_END: schema
 
+    // ANCHOR: prompt
     let response = client
         .structured_prompt::<MyResponse>(
             "List three interesting questions about the Rust programming language.".into(),
@@ -24,7 +29,9 @@ async fn main() -> Result<()> {
         .await?;
 
     println!("Response: {:?}", response.questions);
+    // ANCHOR_END: prompt
 
+    // ANCHOR: dynamic
     // Because we use generics, structured_prompt is not dyn safe. However, there is an
     // alternative:
 
@@ -40,6 +47,7 @@ async fn main() -> Result<()> {
     let parsed: MyResponse = serde_json::from_value(response)?;
 
     println!("Response: {:?}", parsed);
+    // ANCHOR_END: dynamic
 
     Ok(())
 }

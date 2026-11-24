@@ -6,6 +6,7 @@ use swiftide::chat_completion::{ChatMessage, ReasoningItem};
 use swiftide::integrations::openai::{OpenAI, Options, ReasoningEffort};
 use tracing_subscriber::EnvFilter;
 
+// ANCHOR: reasoning
 fn reasoning_summary(reasoning: Option<&[ReasoningItem]>) -> Option<String> {
     let summary = reasoning
         .unwrap_or(&[])
@@ -21,6 +22,7 @@ fn reasoning_summary(reasoning: Option<&[ReasoningItem]>) -> Option<String> {
         Some(summary)
     }
 }
+// ANCHOR_END: reasoning
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,6 +30,7 @@ async fn main() -> Result<()> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
+    // ANCHOR: setup
     // Reasoning models require the Responses API. Enabling reasoning effort also asks for a
     // summary and encrypted reasoning content (enabled by default). If your OpenAI org is not
     // verified for reasoning access, summaries may be absent. Disable with
@@ -37,7 +40,9 @@ async fn main() -> Result<()> {
         .default_options(Options::builder().reasoning_effort(ReasoningEffort::Low))
         .use_responses_api(true)
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: agent
     let mut agent = Agent::builder()
         .llm(&openai)
         .on_new_message(|_, message| {
@@ -61,10 +66,13 @@ async fn main() -> Result<()> {
             Box::pin(async move { Ok(()) })
         })
         .build()?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: run
     agent
         .query("Explain why the sky is blue in one short paragraph.")
         .await?;
+    // ANCHOR_END: run
 
     Ok(())
 }

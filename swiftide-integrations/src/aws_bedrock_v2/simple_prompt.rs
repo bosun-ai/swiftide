@@ -13,10 +13,13 @@ use super::AwsBedrock;
 
 #[async_trait]
 impl SimplePrompt for AwsBedrock {
-    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
+    #[cfg_attr(
+        not(feature = "langfuse"),
+        tracing::instrument(skip_all, err(level = "warn"))
+    )]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+        tracing::instrument(skip_all, err(level = "warn"), fields(langfuse.type = "GENERATION"))
     )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let prompt_text = prompt.render()?;

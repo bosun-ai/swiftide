@@ -48,10 +48,13 @@ type ExtractedMessage = (Option<String>, Option<Vec<ToolCall>>, Vec<ReasoningIte
 
 #[async_trait]
 impl ChatCompletion for AwsBedrock {
-    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
+    #[cfg_attr(
+        not(feature = "langfuse"),
+        tracing::instrument(skip_all, err(level = "warn"))
+    )]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+        tracing::instrument(skip_all, err(level = "warn"), fields(langfuse.type = "GENERATION"))
     )]
     async fn complete(
         &self,

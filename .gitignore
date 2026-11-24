@@ -24,3 +24,7 @@ tmp
 **/.fastembed_cache
 .idea/
 .history.cargo
+
+# showcase example state
+.ask-your-codebase/
+.docs-qa/
