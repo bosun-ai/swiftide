@@ -57,7 +57,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            prompt_model: "claude-3-5-sonnet-20241022".to_string(),
+            prompt_model: "claude-sonnet-5-5".to_string(),
         }
     }
 }
@@ -168,5 +168,17 @@ impl AnthropicBuilder {
             });
         }
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_prompt_model_is_not_retired() {
+        let anthropic = Anthropic::builder().build().unwrap();
+
+        assert_eq!(anthropic.default_options.prompt_model, "claude-sonnet-5-5");
     }
 }
