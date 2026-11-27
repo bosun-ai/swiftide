@@ -10243,7 +10243,7 @@ version = "0.34.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.1",
  "derive_builder",
  "document-features",
  "futures-util",
@@ -10301,7 +10301,7 @@ name = "swiftide-examples"
 version = "0.34.0"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
+ "base64 0.23.1",
  "fluvio",
  "futures-util",
  "metrics",
@@ -10368,7 +10368,7 @@ dependencies = [
  "aws-smithy-json",
  "aws-smithy-types",
  "backoff",
- "base64 0.22.1",
+ "base64 0.23.1",
  "chrono",
  "deadpool 0.13.1",
  "derive_builder",
