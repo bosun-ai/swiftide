@@ -6,7 +6,7 @@ with fts as (
         fts_main_{{table_name}}.match_bm25(
             uuid,
             {{query}},
-            fields := chunk
+            fields := 'chunk'
         ) as score
     from {{table_name}}
     limit {{top_n}}
