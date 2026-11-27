@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     path::Path,
-    sync::{LazyLock, Mutex as StdMutex},
+    sync::{LazyLock, Mutex as StdMutex, atomic::Ordering},
 };
 
 use anyhow::{Context as _, Result};
@@ -90,6 +90,7 @@ impl<T: Chunk + AsRef<str>> Duckdb<T> {
         // TODO: Investigate concurrency in duckdb, maybe optmistic if it works
         stmt.execute(params_from_iter(values))
             .context("Failed to store node")?;
+        self.fts_index_dirty.store(true, Ordering::Relaxed);
 
         Ok(())
     }
@@ -133,13 +134,7 @@ impl<T: Chunk + AsRef<str>> Persist for Duckdb<T> {
             let conn = self.connection.lock().unwrap();
             // We need to run this separately to ensure the table is created before we create the
             // index
-            conn.execute_batch(&format!(
-                "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
-                 stopwords = 'english', ignore = '(\\.|[^a-z])+',
-                 strip_accents = 1, lower = 1, overwrite = 0);
-",
-                self.table_name
-            ))?;
+            self.refresh_fts_index(&conn)?;
         }
 
         tracing::info!("Setup completed");

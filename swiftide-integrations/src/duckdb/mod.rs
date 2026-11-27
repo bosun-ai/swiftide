@@ -1,6 +1,9 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use anyhow::{Context as _, Result};
@@ -57,6 +60,10 @@ pub struct Duckdb<T: Chunk = String> {
     #[builder(default)]
     vectors: HashMap<EmbeddedField, usize>,
 
+    // Shared by clones; accessed while holding the connection lock.
+    #[builder(private, default = Arc::new(AtomicBool::new(true)))]
+    fts_index_dirty: Arc<AtomicBool>,
+
     /// Batch size for storing nodes
     #[builder(default = "256")]
     batch_size: usize,
@@ -107,6 +114,19 @@ impl<T: Chunk> Duckdb<T> {
     // pub fn builder() -> DuckdbBuilder<String> {
     //     DuckdbBuilder::<String>::default()
     // }
+
+    fn refresh_fts_index(&self, conn: &duckdb::Connection) -> Result<()> {
+        if self.fts_index_dirty.load(Ordering::Relaxed) {
+            conn.execute_batch(&format!(
+                "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
+                 stopwords = 'english', ignore = '(\\.|[^a-z])+',
+                 strip_accents = 1, lower = 1, overwrite = 1);",
+                self.table_name
+            ))?;
+            self.fts_index_dirty.store(false, Ordering::Relaxed);
+        }
+        Ok(())
+    }
 
     /// Name of the indexing table
     pub fn table_name(&self) -> &str {
