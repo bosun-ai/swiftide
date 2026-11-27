@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795197003381,
+  "lastUpdate": 1795799407960,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -38099,6 +38099,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2095272,
             "range": "± 2941",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f556e2ac1e706b1c5dec41b304abce99556183d4",
+          "message": "feat(integrations): add standalone Mistral client (#1213)\n\n## Problem statement\n\nSupport Mistral Large 4 directly and through Bifrost (#1212), preserving\nthinking, tool turns, streaming and usage without changing other\nproviders.\n\n## Implementation\n\n- Add standalone `mistral::Mistral`, reusing SDK transport, request,\nitem, event and usage types. Support native Chat Completions, explicit\n`ChatFormat::Bifrost`, and opt-in stateless `use_responses_api(true)`.\n- Preserve reasoning, tool IDs, persisted replay, structured output and\ncache/reasoning usage. The two-turn example supports `--responses` and\n`--stream`.\n- Retain the isolated Responses adapter: comparative fixtures against\nmaster #1221 verify plaintext replay on both clients, but reproduce\nupstream incompatibilities with schema-valid fractional timestamps,\n`call_…` tool IDs and intermediate reasoning deltas.\n- Reject framing-changing request overrides. Use the final outgoing\nmodel for success/failure telemetry. Encode byte-backed documents as\nmedia-typed data URLs.\n- Treat interrupted SSE transport and premature Chat EOF as transient\nfailures, preserving available usage exactly once. Require a finish\nreason before accepting Chat EOF, while continuing to read subsequent\nusage frames. Deterministic payload failures remain permanent.\n- In delta-only Responses streams, validate and accumulate items without\nrebuilding full intermediate snapshots. Keep the terminal snapshot based\non the completed response envelope.\n\n## CI and DuckDB repairs\n\n- Integrated master `e260fcb` (Swiftide 0.34.0). OpenAI, core, agents\nand Bedrock source match that master.\n- Update patched DuckDB, libz-sys, URL, cookie and Parquet lockfile\nversions. DuckDB's cache-restoration regression reproduces against\n1.20000.1 and passes against 1.20001.0.\n- Document only three unmaintained-library notices with no patched\nrelease (`chrono`, `chrono-tz`, `humantime`), required by existing\ndependencies. Vulnerability checks remain enabled; the dependency audit\npasses.\n- Fix the DuckDB failures exposed by the repaired build and review: pass\nthe indexed field name to BM25, refresh its index after single/batch\nwrites, rank text and vector candidates before applying limits, merge\ntheir candidate sets, and keep normalized scores finite when text\nmatches are absent or all vectors point in the opposite direction.\nClones share index invalidation; repeated reads do not rebuild an\nunchanged index.\n\n## Validation\n\nLocal validation on `b2fd62b`: 198 integration tests pass (including\nnative/Bifrost/Responses fixtures, real interrupted HTTP streams,\ntelemetry capture and real DuckDB regressions), six doctests pass,\nstrict all-targets Clippy with `mistral,duckdb,metrics,langfuse` passes,\nand nightly workspace formatting passes. One pre-existing ignored test\nremains ignored. New failure regressions were run against the preceding\nimplementation before fixes.\n\nFull CI passed on the preceding `0a91a15` head (721 tests, workspace\nClippy, doctests, feature matrix and coverage). CI and renewed\nCodeRabbit review are pending for the latest review fixes. Auto-merge\nremains subject to the repository's required checks and approval.\n\nGateway Responses routing must be configured separately. No Bifrost\nchanges or automatic history truncation are included.\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n* Added Mistral integration support for chat and streaming responses,\ntool calls, reasoning, and structured prompts.\n* Configure Mistral request options, choose native or Bifrost chat\nformats, and receive usage updates.\n* Added Mistral Responses API support, including streaming, reasoning,\nand tool calls.\n* Added an example for making Mistral requests in streaming and\nnon-streaming modes.\n* **Bug Fixes**\n* Improved DuckDB hybrid search ranking and full-text search indexing,\nincluding updates after new content is stored.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-11-27T16:59:40Z",
+          "tree_id": "52d05a62e4ec8a834eb60bf53875fc237acaced7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f556e2ac1e706b1c5dec41b304abce99556183d4"
+        },
+        "date": 1795799405695,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 659316,
+            "range": "± 15268",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 181633,
+            "range": "± 2216",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1618,
+            "range": "± 2074",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5766,
+            "range": "± 5896",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22422,
+            "range": "± 22872",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4157076,
+            "range": "± 13943",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2081327,
+            "range": "± 7002",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16572949,
+            "range": "± 63030",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2087616,
+            "range": "± 4960",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66339406,
+            "range": "± 179613",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2101599,
+            "range": "± 2360",
             "unit": "ns/iter"
           }
         ]
