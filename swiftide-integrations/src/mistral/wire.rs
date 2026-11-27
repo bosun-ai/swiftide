@@ -46,6 +46,7 @@ pub(super) struct Chunk {
 #[derive(Debug, Deserialize)]
 struct StreamChoice {
     delta: Delta,
+    finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -138,6 +139,15 @@ impl From<Completion> for CompletionData {
             result.tool_calls = choice.message.tool_calls;
         }
         result
+    }
+}
+
+impl Chunk {
+    pub(super) fn is_finished(&self) -> bool {
+        self.choices
+            .first()
+            .and_then(|choice| choice.finish_reason.as_deref())
+            .is_some_and(|reason| !reason.is_empty())
     }
 }
 

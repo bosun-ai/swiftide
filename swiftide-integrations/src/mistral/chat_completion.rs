@@ -67,14 +67,13 @@ impl Mistral {
         // Encode native history, including Mistral thinking blocks.
         builder
             .model(model)
-            .messages(Vec::<ChatCompletionRequestMessage>::new());
+            .messages(Vec::<ChatCompletionRequestMessage>::new())
+            .stream(streaming);
         if streaming {
-            builder
-                .stream(true)
-                .stream_options(ChatCompletionStreamOptions {
-                    include_usage: Some(true),
-                    include_obfuscation: None,
-                });
+            builder.stream_options(ChatCompletionStreamOptions {
+                include_usage: Some(true),
+                include_obfuscation: None,
+            });
         }
         if !request.tools_spec().is_empty() {
             builder
@@ -94,6 +93,11 @@ impl Mistral {
         body.as_object_mut()
             .expect("request object")
             .extend(self.default_options.extra_body.clone());
+        if body["stream"] != streaming {
+            return Err(LanguageModelError::permanent(
+                "Mistral Chat requires the selected stream mode",
+            ));
+        }
         if let Some(schema) = schema {
             // The explicitly requested schema takes precedence over default extra-body options.
             body["response_format"] = serde_json::to_value(ResponseFormat::JsonSchema {
@@ -118,11 +122,7 @@ impl Mistral {
             return self.complete_responses(request, schema).await;
         }
         let body = self.chat_request(request, false, schema)?;
-        let model = self
-            .default_options
-            .prompt_model
-            .as_deref()
-            .expect("validated model");
+        let model = super::request_model(&body)?;
         tracing::trace!(model, request = ?body, "Sending chat completion request");
         let completion: wire::Completion =
             self.client
@@ -144,11 +144,7 @@ impl Mistral {
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionStream, LanguageModelError> {
         let body = self.chat_request(request, true, None)?;
-        let model = self
-            .default_options
-            .prompt_model
-            .clone()
-            .expect("validated model");
+        let model = super::request_model(&body)?.to_owned();
         tracing::trace!(model, request = ?body, "Sending streaming chat completion request");
         let source = self
             .client
@@ -167,8 +163,8 @@ impl Mistral {
             tracing::info_span!("stream")
         };
         let stream = stream::unfold(
-            (source, ChatCompletionResponse::default(), false),
-            move |(mut source, mut state, finished)| {
+            (source, ChatCompletionResponse::default(), false, false),
+            move |(mut source, mut state, mut saw_finish, finished)| {
                 let client = client.clone();
                 let body = body.clone();
                 let model = model.clone();
@@ -178,6 +174,7 @@ impl Mistral {
                     }
                     match source.next().await {
                         Some(Ok(chunk)) => {
+                            saw_finish |= chunk.is_finished();
                             let reasoning = Into::<DeltaData>::into(chunk).apply(&mut state);
                             let snapshot = if client.stream_full {
                                 state.clone()
@@ -189,7 +186,7 @@ impl Mistral {
                                     ..Default::default()
                                 }
                             };
-                            Some((Ok(snapshot), (source, state, false)))
+                            Some((Ok(snapshot), (source, state, saw_finish, false)))
                         }
                         Some(Err(error)) => {
                             client.track_failed_chat_completion(
@@ -198,9 +195,23 @@ impl Mistral {
                                 body.as_ref(),
                                 state.usage.as_ref(),
                             );
-                            Some((Err(mistral_error(error)), (source, state, true)))
+                            Some((Err(mistral_error(error)), (source, state, saw_finish, true)))
                         }
                         None => {
+                            if !saw_finish {
+                                client.track_completion(
+                                    &model,
+                                    state.usage.as_ref(),
+                                    Some(body.as_ref()),
+                                    None::<&()>,
+                                );
+                                return Some((
+                                    Err(LanguageModelError::transient(
+                                        "Mistral Chat stream ended without a finish reason",
+                                    )),
+                                    (source, state, saw_finish, true),
+                                ));
+                            }
                             state.delta = None;
                             client.track_completion(
                                 &model,
@@ -208,7 +219,7 @@ impl Mistral {
                                 Some(body.as_ref()),
                                 Some(&state),
                             );
-                            Some((Ok(state.clone()), (source, state, true)))
+                            Some((Ok(state.clone()), (source, state, saw_finish, true)))
                         }
                     }
                 }

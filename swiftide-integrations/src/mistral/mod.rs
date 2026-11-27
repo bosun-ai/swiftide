@@ -65,7 +65,7 @@
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use derive_builder::Builder;
 use std::{pin::Pin, sync::Arc};
-use swiftide_core::chat_completion::Usage;
+use swiftide_core::chat_completion::{Usage, errors::LanguageModelError};
 
 pub use async_openai::config::OpenAIConfig;
 pub use async_openai::types::responses::ReasoningEffort;
@@ -276,4 +276,12 @@ impl Mistral {
         }
         args
     }
+}
+
+// Resolve telemetry from the final wire body, after provider-specific overrides.
+fn request_model(body: &serde_json::Value) -> Result<&str, LanguageModelError> {
+    body["model"]
+        .as_str()
+        .filter(|model| !model.trim().is_empty())
+        .ok_or_else(|| LanguageModelError::permanent("Mistral requires a non-empty model string"))
 }

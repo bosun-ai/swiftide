@@ -368,11 +368,14 @@ async fn streaming_usage_is_reported_once_even_when_the_stream_fails(fail: bool,
     } else {
         json!({"content": "visible"})
     };
-    let frames = [
+    let mut frames = [
         chunk(json!({"role": "assistant"}), earlier_usage.clone()),
         chunk(json!({}), earlier_usage),
         chunk(final_delta, if newer { final_usage } else { Value::Null }),
     ];
+    if !fail {
+        frames[2]["choices"][0]["finish_reason"] = json!("stop");
+    }
     let mut body = String::new();
     for frame in frames {
         writeln!(body, "data: {frame}\n").unwrap();
@@ -403,4 +406,272 @@ async fn streaming_usage_is_reported_once_even_when_the_stream_fails(fail: bool,
     }
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
     assert_usage_once(&mut usage, &expected).await;
+}
+
+#[test_case(false; "ordinary request")]
+#[test_case(true; "streaming request")]
+#[tokio::test]
+async fn chat_rejects_overrides_that_change_response_framing(streaming: bool) {
+    let server = MockServer::start().await;
+    let (mut client, mut usage) = client(&server);
+    client
+        .options_mut()
+        .extra_body
+        .insert("stream".into(), json!(!streaming));
+    let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+    let error = if streaming {
+        client
+            .complete_stream(&request)
+            .await
+            .next()
+            .await
+            .unwrap()
+            .unwrap_err()
+    } else {
+        client.complete(&request).await.unwrap_err()
+    };
+    assert!(matches!(error, LanguageModelError::PermanentError(_)));
+    assert!(server.received_requests().await.unwrap().is_empty());
+    assert_no_usage(&mut usage).await;
+}
+
+#[test_case(false, false; "clean eof without finish")]
+#[test_case(true, false; "done without finish")]
+#[test_case(false, true; "finish followed by clean eof")]
+#[test_case(true, true; "finish followed by done")]
+#[tokio::test]
+async fn chat_requires_a_finish_reason_before_accepting_end_of_stream(done: bool, finished: bool) {
+    let server = MockServer::start().await;
+    let reported = completion(Value::Null)["usage"].clone();
+    let expected = Usage::from(
+        &serde_json::from_value::<async_openai::types::chat::CompletionUsage>(reported.clone())
+            .unwrap(),
+    );
+    let mut frame = chunk(json!({"content": "partial"}), Value::Null);
+    if finished {
+        frame["choices"][0]["finish_reason"] = json!("stop");
+    }
+    // Usage can arrive after the finish reason and must still be reported exactly once.
+    let mut body = format!(
+        "data: {frame}\n\ndata: {}\n\n",
+        json!({"choices": [], "usage": reported})
+    );
+    if done {
+        body.push_str("data: [DONE]\n\n");
+    }
+    Mock::given(method("POST"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(body, "text/event-stream"))
+        .mount(&server)
+        .await;
+    let (client, mut usage) = client(&server);
+    let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+    let results: Vec<_> = client.complete_stream(&request).await.collect().await;
+    assert_eq!(results.len(), 3);
+    if finished {
+        assert_eq!(
+            results.last().unwrap().as_ref().unwrap().message(),
+            Some("partial")
+        );
+    } else {
+        assert!(matches!(
+            results.last().unwrap(),
+            Err(LanguageModelError::TransientError(_))
+        ));
+    }
+    assert_usage_once(&mut usage, &expected).await;
+}
+
+#[test_case(false; "chat")]
+#[test_case(true; "responses")]
+#[tokio::test]
+async fn interrupted_http_body_is_retryable_and_preserves_usage(responses: bool) {
+    use tokio::{
+        io::{AsyncReadExt as _, AsyncWriteExt as _},
+        net::TcpListener,
+    };
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (mut client, mut usage) = client(&MockServer::start().await);
+    client.client = async_openai::Client::with_config(
+        async_openai::config::OpenAIConfig::new()
+            .with_api_key("fixture")
+            .with_api_base(format!("http://{address}")),
+    )
+    .into();
+    client.use_responses_api = responses;
+    let reported = if responses {
+        json!({"input_tokens": 10, "output_tokens": 2, "total_tokens": 12, "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}})
+    } else {
+        json!({"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12})
+    };
+    let expected = if responses {
+        Usage::from(
+            &serde_json::from_value::<async_openai::types::responses::ResponseUsage>(
+                reported.clone(),
+            )
+            .unwrap(),
+        )
+    } else {
+        Usage::from(
+            &serde_json::from_value::<async_openai::types::chat::CompletionUsage>(reported.clone())
+                .unwrap(),
+        )
+    };
+    let frame = if responses {
+        json!({"type": "response.in_progress", "response": {
+            "object": "response", "status": "in_progress", "output": [], "usage": reported
+        }})
+    } else {
+        chunk(json!({"content": "partial"}), reported)
+    };
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut request = Vec::new();
+        loop {
+            let mut buffer = [0; 4096];
+            let read = socket.read(&mut buffer).await.unwrap();
+            assert!(read > 0);
+            request.extend_from_slice(&buffer[..read]);
+            if let Some(end) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+                let headers = String::from_utf8_lossy(&request[..end]).to_lowercase();
+                let length: usize = headers
+                    .lines()
+                    .find_map(|line| line.strip_prefix("content-length:"))
+                    .unwrap()
+                    .trim()
+                    .parse()
+                    .unwrap();
+                if request.len() >= end + 4 + length {
+                    break;
+                }
+            }
+        }
+        let body = format!("data: {frame}\n\n");
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len() + 100
+        );
+        socket.write_all(response.as_bytes()).await.unwrap();
+        socket.shutdown().await.unwrap();
+    });
+    let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+    let results: Vec<_> = tokio::time::timeout(
+        Duration::from_secs(5),
+        client.complete_stream(&request).await.collect(),
+    )
+    .await
+    .unwrap();
+    server.await.unwrap();
+    assert_eq!(results.len(), 2, "{results:?}");
+    assert!(
+        matches!(
+            results.last().unwrap(),
+            Err(LanguageModelError::TransientError(_))
+        ),
+        "{results:?}"
+    );
+    assert_usage_once(&mut usage, &expected).await;
+}
+
+#[cfg(feature = "langfuse")]
+#[test_case(false, false, false; "chat success")]
+#[test_case(false, true, false; "chat stream success")]
+#[test_case(true, false, false; "responses success")]
+#[test_case(true, true, false; "responses stream success")]
+#[test_case(false, false, true; "chat failure")]
+#[test_case(false, true, true; "chat stream failure")]
+#[test_case(true, false, true; "responses failure")]
+#[test_case(true, true, true; "responses stream failure")]
+#[tokio::test]
+async fn telemetry_uses_the_model_sent_in_the_request(
+    responses: bool,
+    streaming: bool,
+    fail: bool,
+) {
+    use std::sync::{Arc, Mutex};
+    use tracing::instrument::WithSubscriber as _;
+    #[derive(Clone)]
+    struct Logs(Arc<Mutex<Vec<u8>>>);
+    impl std::io::Write for Logs {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let logs = Logs(Arc::default());
+    let writer = logs.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .without_time()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::DEBUG)
+        .with_writer(move || writer.clone())
+        .finish();
+    let server = MockServer::start().await;
+    let (mut client, _usage) = client(&server);
+    client.use_responses_api = responses;
+    client
+        .options_mut()
+        .extra_body
+        .insert("model".into(), json!("effective-model"));
+    // Matching framing overrides and unrelated provider fields must remain supported.
+    client
+        .options_mut()
+        .extra_body
+        .insert("stream".into(), json!(streaming));
+    client
+        .options_mut()
+        .extra_body
+        .insert("prompt_cache_key".into(), json!("fixture-cache"));
+    let mut body = if responses {
+        json!({"object": "response", "status": if fail {"failed"} else {"completed"}, "output": [],
+            "usage": {"input_tokens": 10, "output_tokens": 2, "total_tokens": 12,
+                "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}},
+            "error": if fail {json!({"code": "server_error", "message": "fixture"})} else {Value::Null}})
+    } else if fail {
+        completion(json!([{"type": "unsupported"}]))
+    } else {
+        completion(json!("ok"))
+    };
+    let template = if streaming {
+        if responses {
+            body = json!({"type": if fail {"response.failed"} else {"response.completed"}, "response": body});
+        } else {
+            body["choices"][0]["delta"] = body["choices"][0]["message"].take();
+            body["choices"][0]["delta"]["tool_calls"] = Value::Null;
+        }
+        ResponseTemplate::new(200).set_body_raw(
+            format!("data: {body}\n\ndata: [DONE]\n\n"),
+            "text/event-stream",
+        )
+    } else {
+        ResponseTemplate::new(200).set_body_json(body)
+    };
+    Mock::given(method("POST"))
+        .respond_with(template)
+        .expect(1)
+        .mount(&server)
+        .await;
+    let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+    async {
+        if streaming {
+            let results: Vec<_> = client.complete_stream(&request).await.collect().await;
+            assert_eq!(results.iter().any(Result::is_err), fail);
+        } else {
+            assert_eq!(client.complete(&request).await.is_err(), fail);
+        }
+    }
+    .with_subscriber(subscriber)
+    .await;
+    let requests = server.received_requests().await.unwrap();
+    let sent: Value = serde_json::from_slice(&requests[0].body).unwrap();
+    assert_eq!(sent["model"], "effective-model");
+    assert_eq!(sent["prompt_cache_key"], "fixture-cache");
+    let logs = String::from_utf8(logs.0.lock().unwrap().clone()).unwrap();
+    assert!(
+        logs.contains("langfuse.model=\"effective-model\""),
+        "{logs}"
+    );
 }

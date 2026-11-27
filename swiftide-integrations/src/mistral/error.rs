@@ -1,5 +1,5 @@
 //! Error classification is local to Mistral; it does not change the standard `OpenAI` client.
-use async_openai::error::OpenAIError;
+use async_openai::error::{OpenAIError, StreamError};
 use serde::Deserialize;
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
@@ -37,6 +37,11 @@ struct ChoiceError {
 // unknown bodies stay transient; only a recognizable complete completion schema is permanent.
 pub(super) fn mistral_error(error: OpenAIError) -> LanguageModelError {
     match &error {
+        OpenAIError::StreamError(stream)
+            if matches!(stream.as_ref(), StreamError::EventStream(_)) =>
+        {
+            LanguageModelError::transient(error)
+        }
         OpenAIError::JSONDeserialize(_, content) => {
             match serde_json::from_str::<NativeError>(content) {
                 Ok(NativeError::Error { kind })

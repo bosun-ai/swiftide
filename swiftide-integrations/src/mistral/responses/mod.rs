@@ -86,11 +86,7 @@ impl Mistral {
         schema: Option<Schema>,
     ) -> Result<ChatCompletionResponse> {
         let body = self.responses_request(request, false, schema)?;
-        let model = self
-            .default_options
-            .prompt_model
-            .as_deref()
-            .expect("validated model");
+        let model = super::request_model(&body)?;
         let result = self.client.responses().create_byot::<_, Value>(&body).await;
         let raw = match result {
             Ok(raw) => raw,
@@ -154,6 +150,7 @@ fn output_to_completion<'a>(
 ) -> Result<ChatCompletionResponse> {
     let mut response = ChatCompletionResponse::default();
     for item in items {
+        validate_output_item(item)?;
         match item {
             r::OutputItem::Message(message) => {
                 for part in &message.content {
@@ -171,11 +168,6 @@ fn output_to_completion<'a>(
                     .push(reasoning_from_sdk(item));
             }
             r::OutputItem::FunctionCall(call) => {
-                if call.call_id.is_empty() || call.name.is_empty() || call.namespace.is_some() {
-                    return Err(LanguageModelError::permanent(
-                        "Mistral Responses requires named, non-namespaced function calls with call_id",
-                    ));
-                }
                 response.tool_calls.get_or_insert_default().push(
                     ToolCall::builder()
                         .id(&call.call_id)
@@ -185,14 +177,27 @@ fn output_to_completion<'a>(
                         .map_err(LanguageModelError::permanent)?,
                 );
             }
-            _ => {
-                return Err(LanguageModelError::permanent(
-                    "Unsupported Mistral Responses output item",
-                ));
-            }
+            _ => unreachable!("validated output item"),
         }
     }
     Ok(response)
+}
+
+fn validate_output_item(item: &r::OutputItem) -> Result<()> {
+    match item {
+        r::OutputItem::Message(_) | r::OutputItem::Reasoning(_) => Ok(()),
+        r::OutputItem::FunctionCall(call) => {
+            if call.call_id.is_empty() || call.name.is_empty() || call.namespace.is_some() {
+                return Err(LanguageModelError::permanent(
+                    "Mistral Responses requires named, non-namespaced function calls with call_id",
+                ));
+            }
+            Ok(())
+        }
+        _ => Err(LanguageModelError::permanent(
+            "Unsupported Mistral Responses output item",
+        )),
+    }
 }
 
 fn reasoning_from_sdk(item: &r::ReasoningItem) -> ReasoningItem {

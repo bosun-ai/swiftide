@@ -231,9 +231,13 @@ fn input_part(part: &ChatMessageContentPart) -> Result<r::InputContent> {
                 ChatMessageContentSource::FileId { file_id } => {
                     file.file_id(file_id);
                 }
-                ChatMessageContentSource::Bytes { data, .. } => {
-                    file.file_data(base64::engine::general_purpose::STANDARD.encode(data))
-                        .filename(name.as_deref().unwrap_or("document"));
+                ChatMessageContentSource::Bytes { data, media_type } => {
+                    file.file_data(format!(
+                        "data:{};base64,{}",
+                        media_type.as_deref().unwrap_or("application/octet-stream"),
+                        base64::engine::general_purpose::STANDARD.encode(data)
+                    ))
+                    .filename(name.as_deref().unwrap_or("document"));
                 }
                 ChatMessageContentSource::S3 { .. } => {
                     return Err(LanguageModelError::permanent(

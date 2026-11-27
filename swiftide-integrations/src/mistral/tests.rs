@@ -370,6 +370,12 @@ async fn direct_reasoning_stream_transitions_and_replays(stream_full: bool) {
     for delta in deltas {
         writeln!(sse, "data: {}\n", json!({"choices": [{"delta": delta}]})).unwrap();
     }
+    writeln!(
+        sse,
+        "data: {}\n",
+        json!({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+    )
+    .unwrap();
     let usage_frame = json!({"choices": [], "usage": {
         "prompt_tokens": 128, "completion_tokens": 10, "total_tokens": 138,
         "prompt_tokens_details": {"cached_tokens": 64},
@@ -410,7 +416,7 @@ async fn direct_reasoning_stream_transitions_and_replays(stream_full: bool) {
         snapshots.push(snapshot.unwrap());
     }
     drop(stream);
-    assert_eq!(snapshots.len(), 7);
+    assert_eq!(snapshots.len(), 8);
     assert_eq!(
         snapshots
             .iter()
@@ -447,7 +453,7 @@ async fn direct_reasoning_stream_transitions_and_replays(stream_full: bool) {
     assert!(snapshots[4].delta.as_ref().unwrap().message_chunk.is_none());
     if !stream_full {
         assert!(
-            snapshots[..6]
+            snapshots[..7]
                 .iter()
                 .all(|snapshot| snapshot.message.is_none())
         );

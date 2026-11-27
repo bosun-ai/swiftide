@@ -49,6 +49,12 @@ async fn reasoning_tools_usage_and_persisted_history(streaming: bool, closed: Op
     }
     writeln!(
         sse,
+        "data: {}\n",
+        json!({"choices": [{"delta": {}, "finish_reason": "tool_calls"}]})
+    )
+    .unwrap();
+    writeln!(
+        sse,
         "data: {}\n\ndata: [DONE]\n",
         json!({"choices":[],"usage":usage})
     )

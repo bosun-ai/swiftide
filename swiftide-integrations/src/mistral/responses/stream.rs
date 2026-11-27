@@ -13,6 +13,7 @@ use tracing_futures::Instrument;
 
 use super::{
     Mistral, Response, Result, decode, output_to_completion, response_error, response_usage,
+    validate_output_item,
 };
 
 #[derive(Default)]
@@ -28,11 +29,7 @@ impl Mistral {
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionStream> {
         let body = self.responses_request(request, true, None)?;
-        let model = self
-            .default_options
-            .prompt_model
-            .clone()
-            .expect("validated model");
+        let model = super::super::request_model(&body)?.to_owned();
         let source = self
             .client
             .responses()
@@ -62,7 +59,7 @@ impl Mistral {
                             if let Some(usage) = response_usage(&raw) {
                                 state.response.usage = Some(usage);
                             }
-                            state.apply(&raw)
+                            state.apply(&raw, client.stream_full)
                         }
                         Some(Err(error)) => {
                             client.track_responses_error(
@@ -117,7 +114,7 @@ impl Mistral {
 }
 
 impl State {
-    fn apply(&mut self, raw: &Value) -> Result<bool> {
+    fn apply(&mut self, raw: &Value, stream_full: bool) -> Result<bool> {
         self.response.delta = None;
         self.reasoning_delta = None;
         match raw["type"].as_str() {
@@ -142,11 +139,19 @@ impl State {
             _ => {}
         }
         self.apply_event(decode(raw)?)?;
-        let mut snapshot = output_to_completion(self.items.values())?;
-        snapshot.id = self.response.id;
-        snapshot.usage = self.response.usage.take();
-        snapshot.delta = self.response.delta.take();
-        self.response = snapshot;
+        if stream_full {
+            let mut snapshot = output_to_completion(self.items.values())?;
+            snapshot.id = self.response.id;
+            snapshot.usage = self.response.usage.take();
+            snapshot.delta = self.response.delta.take();
+            self.response = snapshot;
+        } else {
+            // Keep only per-event deltas here. The item map owns accumulated output until the
+            // terminal envelope, avoiding a full response copy on every token.
+            self.response.message = None;
+            self.response.tool_calls = None;
+            self.response.reasoning = None;
+        }
         Ok(false)
     }
 
@@ -155,11 +160,13 @@ impl State {
         use r::ResponseStreamEvent as E;
         match event {
             E::ResponseOutputItemAdded(event) => {
+                validate_output_item(&event.item)?;
                 if self.items.insert(event.output_index, event.item).is_some() {
                     return Err(invalid_event());
                 }
             }
             E::ResponseOutputItemDone(event) => {
+                validate_output_item(&event.item)?;
                 self.items.insert(event.output_index, event.item);
             }
             E::ResponseContentPartAdded(event) => self.set_part(
@@ -230,15 +237,15 @@ impl State {
                 );
             }
             E::ResponseFunctionCallArgumentsDone(event) => {
-                let r::OutputItem::FunctionCall(call) =
-                    self.item(event.output_index, &event.item_id)?
-                else {
+                let item = self.item(event.output_index, &event.item_id)?;
+                let r::OutputItem::FunctionCall(call) = item else {
                     return Err(invalid_event());
                 };
                 call.arguments = event.arguments;
                 if let Some(name) = event.name {
                     call.name = name;
                 }
+                validate_output_item(item)?;
             }
             E::ResponseError(event) => {
                 return Err(response_error(event.code.as_deref(), &event.message));
@@ -342,4 +349,93 @@ fn invalid_event() -> LanguageModelError {
     LanguageModelError::permanent(
         "Mistral Responses event references an unexpected output item or content part",
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn delta_only_stream_defers_full_snapshots_until_completion() {
+        let mut state = State::default();
+        let item = json!({"type": "message", "id": "msg", "role": "assistant", "status": "in_progress",
+            "content": [{"type": "output_text", "text": "", "annotations": []}]});
+        state
+            .apply(
+                &json!({"type": "response.output_item.added", "sequence_number": 0,
+            "output_index": 0, "item": item}),
+                false,
+            )
+            .unwrap();
+        let delta = "x".repeat(1024);
+        for sequence in 1..=100 {
+            state
+                .apply(
+                    &json!({"type": "response.output_text.delta", "sequence_number": sequence,
+                "output_index": 0, "item_id": "msg", "content_index": 0, "delta": delta}),
+                    false,
+                )
+                .unwrap();
+            assert_eq!(
+                state
+                    .response
+                    .delta
+                    .as_ref()
+                    .unwrap()
+                    .message_chunk
+                    .as_deref(),
+                Some(delta.as_str())
+            );
+            assert!(
+                state.response.message.is_none(),
+                "delta-only mode must not copy accumulated text"
+            );
+        }
+        let id = state.response.id;
+        let mut completed = item;
+        completed["content"][0]["text"] = json!(delta.repeat(100));
+        completed["status"] = json!("completed");
+        assert!(
+            state
+                .apply(
+                    &json!({"type": "response.completed", "response": {
+                        "object": "response", "status": "completed", "output": [completed]
+                    }}),
+                    false
+                )
+                .unwrap()
+        );
+        assert_eq!(state.response.id, id);
+        assert_eq!(
+            state.response.message.as_deref(),
+            Some(delta.repeat(100).as_str())
+        );
+    }
+
+    #[test]
+    fn both_stream_modes_validate_items_before_emitting_them() {
+        for full in [false, true] {
+            for item in [
+                json!({"type": "custom_tool_call", "id": "custom", "call_id": "call", "name": "tool", "input": ""}),
+                json!({"type": "function_call", "id": "function", "call_id": "call", "name": "tool", "arguments": "", "namespace": "unsupported"}),
+                json!({"type": "function_call", "id": "function", "call_id": "", "name": "tool", "arguments": ""}),
+            ] {
+                for kind in ["response.output_item.added", "response.output_item.done"] {
+                    let mut state = State::default();
+                    let result = state.apply(&json!({"type": kind, "sequence_number": 0, "output_index": 0, "item": item}), full);
+                    assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+                }
+            }
+            let mut state = State::default();
+            state.apply(&json!({"type": "response.output_item.added", "sequence_number": 0, "output_index": 0,
+                "item": {"type": "function_call", "id": "function", "call_id": "call", "name": "tool", "arguments": ""}}), full).unwrap();
+            let result = state.apply(
+                &json!({"type": "response.function_call_arguments.done", "sequence_number": 1,
+                "output_index": 0, "item_id": "function", "name": "", "arguments": "{}"}),
+                full,
+            );
+            assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+        }
+    }
 }

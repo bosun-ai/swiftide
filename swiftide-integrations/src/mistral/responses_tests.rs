@@ -415,8 +415,10 @@ async fn responses_errors_account_once(streaming: bool, failure: &str, permanent
     assert!(usage.recv().await.is_none());
 }
 
+#[test_case(Some("application/pdf"); "explicit media type")]
+#[test_case(None; "default media type")]
 #[tokio::test]
-async fn responses_request_options_and_multimodal_inputs() {
+async fn responses_request_options_and_multimodal_inputs(media_type: Option<&str>) {
     use swiftide_core::chat_completion::{
         ChatMessageContentPart as Part, ChatMessageContentSource as Source,
     };
@@ -444,7 +446,7 @@ async fn responses_request_options_and_multimodal_inputs() {
             Part::Document {
                 source: Source::Bytes {
                     data: b"fixture".to_vec(),
-                    media_type: Some("application/pdf".into()),
+                    media_type: media_type.map(Into::into),
                 },
                 name: Some("fixture.pdf".into()),
                 format: Some("pdf".into()),
@@ -467,7 +469,13 @@ async fn responses_request_options_and_multimodal_inputs() {
     assert_eq!(body["tools"][0]["name"], "echo");
     assert_eq!(body["input"][1]["content"][0]["type"], "input_image");
     assert_eq!(body["input"][1]["content"][1]["type"], "input_file");
-    assert_eq!(body["input"][1]["content"][1]["file_data"], "Zml4dHVyZQ==");
+    assert_eq!(
+        body["input"][1]["content"][1]["file_data"],
+        format!(
+            "data:{};base64,Zml4dHVyZQ==",
+            media_type.unwrap_or("application/octet-stream")
+        )
+    );
     assert_eq!(body["input"][1]["content"][1]["filename"], "fixture.pdf");
     for forbidden in [
         "stream_options",
