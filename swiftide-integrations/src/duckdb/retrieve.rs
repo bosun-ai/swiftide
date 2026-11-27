@@ -132,6 +132,7 @@ impl<T: Chunk> Retrieve<HybridSearch> for Duckdb<T> {
         tracing::debug!("[duckdb] Executing query: {}", sql);
 
         let conn = self.connection().lock().unwrap();
+        self.refresh_fts_index(&conn)?;
         let mut stmt = conn
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for persist")?;
@@ -240,5 +241,141 @@ mod tests {
             document.metadata().get("id").unwrap().as_str(),
             Some(node.id().to_string().as_str())
         );
+    }
+
+    fn hybrid_query(text: &str) -> Query<states::Pending> {
+        Query::<states::Pending>::builder()
+            .original(text)
+            .embedding(vec![1.0, 0.0, 0.0])
+            .build()
+            .unwrap()
+    }
+
+    fn hybrid_node(text: &str, vector: Vec<f32>) -> TextNode {
+        TextNode::new(text)
+            .with_vectors([(EmbeddedField::Combined, vector)])
+            .to_owned()
+    }
+
+    #[tokio::test]
+    async fn hybrid_candidates_are_ranked_before_limiting() {
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open_in_memory().unwrap())
+            .table_name("ranked")
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+        client.setup().await.unwrap();
+        client
+            .store(hybrid_node("unrelated first row", vec![-1.0, 0.0, 0.0]))
+            .await
+            .unwrap();
+        client
+            .store(hybrid_node("relevant later row", vec![1.0, 0.0, 0.0]))
+            .await
+            .unwrap();
+        let strategy = HybridSearch::default().with_top_n(1).with_top_k(1);
+        let result = client
+            .retrieve(&strategy, hybrid_query("absent"))
+            .await
+            .unwrap();
+        assert_eq!(result.documents()[0].content(), "relevant later row");
+    }
+
+    #[tokio::test]
+    async fn hybrid_search_without_text_matches_keeps_finite_vector_scores() {
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open_in_memory().unwrap())
+            .table_name("vectors")
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+        client.setup().await.unwrap();
+        client
+            .store(hybrid_node("opposite direction", vec![-1.0, 0.0, 0.0]))
+            .await
+            .unwrap();
+        let strategy = HybridSearch::default();
+        for add_match in [false, true] {
+            if add_match {
+                client
+                    .store(hybrid_node("matching direction", vec![1.0, 0.0, 0.0]))
+                    .await
+                    .unwrap();
+            }
+            let result = client
+                .retrieve(&strategy, hybrid_query("absent"))
+                .await
+                .unwrap();
+            assert_eq!(
+                result.documents()[0].content(),
+                if add_match {
+                    "matching direction"
+                } else {
+                    "opposite direction"
+                }
+            );
+            let sql = client
+                .hybrid_query_sql(&strategy, "absent", &[1.0, 0.0, 0.0])
+                .unwrap();
+            let conn = client.connection.lock().unwrap();
+            let mut statement = conn.prepare(&sql).unwrap();
+            let scores: Vec<f64> = statement
+                .query_map([], |row| row.get("score_cc"))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            assert!(scores.iter().all(|score| score.is_finite()));
+        }
+    }
+
+    #[tokio::test]
+    async fn hybrid_text_search_includes_single_and_batch_writes_through_clones() {
+        use futures_util::TryStreamExt as _;
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open_in_memory().unwrap())
+            .table_name("fresh")
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+        client.setup().await.unwrap();
+        client
+            .store(hybrid_node("initial baseline", vec![1.0, 0.0, 0.0]))
+            .await
+            .unwrap();
+        let strategy = HybridSearch::default().with_top_n(1).with_top_k(1);
+        client
+            .retrieve(&strategy, hybrid_query("baseline"))
+            .await
+            .unwrap();
+        for (text, batch) in [("telescope astronomy", false), ("microscope biology", true)] {
+            let writer = client.clone();
+            let node = hybrid_node(text, vec![1.0, 0.0, 0.0]);
+            if batch {
+                writer
+                    .batch_store(vec![node])
+                    .await
+                    .try_collect::<Vec<_>>()
+                    .await
+                    .unwrap();
+            } else {
+                writer.store(node).await.unwrap();
+            }
+            let result = client
+                .retrieve(&strategy, hybrid_query(text))
+                .await
+                .unwrap();
+            assert_eq!(result.documents()[0].content(), text);
+            let sql = client
+                .hybrid_query_sql(&strategy, text, &[1.0, 0.0, 0.0])
+                .unwrap();
+            let score: f64 = client
+                .connection
+                .lock()
+                .unwrap()
+                .query_row(&sql, [], |row| row.get("raw_fts_score"))
+                .unwrap();
+            assert!(score > 0.0, "new text must be indexed");
+        }
     }
 }
