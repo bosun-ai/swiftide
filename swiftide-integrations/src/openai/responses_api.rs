@@ -21,6 +21,7 @@ use swiftide_core::chat_completion::{
     Usage,
 };
 
+use super::chat_completion::StreamOutput;
 use super::tool_schema::OpenAiToolSchema;
 use super::{GenericOpenAI, openai_error_to_language_model_error};
 use crate::openai::LanguageModelError;
@@ -429,7 +430,7 @@ impl ResponsesStreamState {
     fn apply_event(
         &mut self,
         event: ResponseStreamEvent,
-        stream_full: bool,
+        output: StreamOutput,
     ) -> LmResult<Option<ResponsesStreamItem>> {
         if self.finished {
             return Ok(None);
@@ -439,12 +440,12 @@ impl ResponsesStreamState {
             ResponseStreamEvent::ResponseOutputTextDelta(delta) => {
                 self.response
                     .append_message_delta(Some(delta.delta.as_str()));
-                Some(self.emit(stream_full, false))
+                self.emit(output, false)
             }
             ResponseStreamEvent::ResponseContentPartAdded(part) => match &part.part {
                 OutputContent::OutputText(text) => {
                     self.response.append_message_delta(Some(text.text.as_str()));
-                    Some(self.emit(stream_full, false))
+                    self.emit(output, false)
                 }
                 _ => None,
             },
@@ -460,12 +461,12 @@ impl ResponsesStreamState {
                         Some(function_call.name.as_str()),
                         arguments,
                     );
-                    Some(self.emit(stream_full, false))
+                    self.emit(output, false)
                 }
                 OutputItem::Message(message) => collect_message_text_from_message(message, "\n")
-                    .map(|text| {
+                    .and_then(|text| {
                         self.response.append_message_delta(Some(text.as_str()));
-                        self.emit(stream_full, false)
+                        self.emit(output, false)
                     }),
                 _ => None,
             },
@@ -479,7 +480,7 @@ impl ResponsesStreamState {
                         Some(function_call.name.as_str()),
                         None,
                     );
-                    Some(self.emit(stream_full, false))
+                    self.emit(output, false)
                 } else {
                     None
                 }
@@ -488,7 +489,7 @@ impl ResponsesStreamState {
                 let index = delta.output_index as usize;
                 self.response
                     .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
-                Some(self.emit(stream_full, false))
+                self.emit(output, false)
             }
             ResponseStreamEvent::ResponseFunctionCallArgumentsDone(done) => {
                 let index = done.output_index as usize;
@@ -500,10 +501,11 @@ impl ResponsesStreamState {
                     let new_args = done.arguments.as_str();
                     let duplicate = self
                         .response
-                        .tool_calls
+                        .delta
                         .as_ref()
-                        .and_then(|calls| calls.get(index))
-                        .and_then(|tc| tc.args())
+                        .and_then(|delta| delta.tool_calls_chunk.as_ref())
+                        .and_then(|calls| calls.get(&index))
+                        .and_then(|call| call.arguments.as_deref())
                         .is_some_and(|existing| existing == new_args);
                     if !duplicate {
                         arguments = Some(new_args);
@@ -513,7 +515,7 @@ impl ResponsesStreamState {
                 if name.is_some() || arguments.is_some() {
                     self.response
                         .append_tool_call_delta(index, None, name, arguments);
-                    Some(self.emit(stream_full, false))
+                    self.emit(output, false)
                 } else {
                     None
                 }
@@ -522,13 +524,13 @@ impl ResponsesStreamState {
                 metadata_to_chat_completion(completed.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
-                Some(self.emit(stream_full, true))
+                self.emit(output, true)
             }
             ResponseStreamEvent::ResponseIncomplete(incomplete) => {
                 metadata_to_chat_completion(incomplete.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
-                Some(self.emit(stream_full, true))
+                self.emit(output, true)
             }
             ResponseStreamEvent::ResponseFailed(failed) => {
                 self.finished = true;
@@ -548,58 +550,40 @@ impl ResponsesStreamState {
         Ok(maybe_item)
     }
 
-    fn emit(&mut self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
+    fn emit(&mut self, output: StreamOutput, finished: bool) -> Option<ResponsesStreamItem> {
         let response = if finished {
             // Stream is complete; move the accumulated response out of state.
             let mut response = std::mem::take(&mut self.response);
             response.delta = None;
             response
-        } else if stream_full {
-            self.response.clone()
         } else {
-            ChatCompletionResponse {
-                id: self.response.id,
-                message: None,
-                tool_calls: None,
-                usage: None,
-                reasoning: None,
-                delta: self.response.delta.clone(),
-            }
+            output.snapshot(&self.response)?
         };
 
-        ResponsesStreamItem { response, finished }
-    }
-
-    fn take_final(&mut self, stream_full: bool) -> Option<ResponsesStreamItem> {
-        if self.finished {
-            None
-        } else {
-            self.finished = true;
-            Some(self.emit(stream_full, true))
-        }
+        Some(ResponsesStreamItem { response, finished })
     }
 }
 
 pub(super) fn responses_stream_adapter(
     stream: ResponseStream,
-    stream_full: bool,
+    output: StreamOutput,
 ) -> ResponsesStreamAdapter {
-    ResponsesStreamAdapter::new(stream, stream_full)
+    ResponsesStreamAdapter::new(stream, output)
 }
 
 pub(super) struct ResponsesStreamAdapter {
     inner: ResponseStream,
     state: ResponsesStreamState,
-    stream_full: bool,
+    output: StreamOutput,
     finished: bool,
 }
 
 impl ResponsesStreamAdapter {
-    fn new(stream: ResponseStream, stream_full: bool) -> Self {
+    fn new(stream: ResponseStream, output: StreamOutput) -> Self {
         Self {
             inner: stream,
             state: ResponsesStreamState::default(),
-            stream_full,
+            output,
             finished: false,
         }
     }
@@ -628,7 +612,7 @@ impl Stream for ResponsesStreamAdapter {
                         }
                     };
 
-                    match this.state.apply_event(event, this.stream_full) {
+                    match this.state.apply_event(event, this.output) {
                         Ok(Some(item)) => {
                             if item.finished {
                                 this.finished = true;
@@ -644,10 +628,9 @@ impl Stream for ResponsesStreamAdapter {
                 }
                 Poll::Ready(None) => {
                     this.finished = true;
-                    if let Some(item) = this.state.take_final(this.stream_full) {
-                        return Poll::Ready(Some(Ok(item)));
-                    }
-                    return Poll::Ready(None);
+                    return Poll::Ready(Some(Err(LanguageModelError::transient(
+                        "Responses stream ended before a terminal response event",
+                    ))));
                 }
                 Poll::Pending => return Poll::Pending,
             }
@@ -921,7 +904,14 @@ mod tests {
         stream_full: bool,
     ) -> ResponsesStreamItem {
         state
-            .apply_event(event, stream_full)
+            .apply_event(
+                event,
+                if stream_full {
+                    StreamOutput::Full
+                } else {
+                    StreamOutput::Delta
+                },
+            )
             .unwrap()
             .expect("expected emission")
     }
@@ -932,7 +922,17 @@ mod tests {
         stream_full: bool,
     ) {
         assert!(
-            state.apply_event(event, stream_full).unwrap().is_none(),
+            state
+                .apply_event(
+                    event,
+                    if stream_full {
+                        StreamOutput::Full
+                    } else {
+                        StreamOutput::Delta
+                    }
+                )
+                .unwrap()
+                .is_none(),
             "expected no emission"
         );
     }
@@ -1787,11 +1787,16 @@ mod tests {
         assert_eq!(usage.total_tokens, 8);
     }
 
-    #[test]
-    fn test_stream_state_take_final_only_once() {
-        let mut state = ResponsesStreamState::default();
-        assert!(state.take_final(true).is_some());
-        assert!(state.take_final(true).is_none());
+    #[tokio::test]
+    async fn an_unfinished_stream_errors_once() {
+        use futures_util::StreamExt as _;
+        let mut adapter =
+            responses_stream_adapter(Box::pin(futures_util::stream::empty()), StreamOutput::Final);
+        assert!(matches!(
+            adapter.next().await,
+            Some(Err(LanguageModelError::TransientError(_)))
+        ));
+        assert!(adapter.next().await.is_none());
     }
 
     #[test]
@@ -1985,7 +1990,10 @@ mod tests {
         .unwrap();
 
         let err = state
-            .apply_event(ResponseStreamEvent::ResponseFailed(failed), false)
+            .apply_event(
+                ResponseStreamEvent::ResponseFailed(failed),
+                StreamOutput::Delta,
+            )
             .unwrap_err();
         assert!(
             matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("oops"))
@@ -1998,7 +2006,10 @@ mod tests {
         }))
         .unwrap();
         let err = state
-            .apply_event(ResponseStreamEvent::ResponseError(err_event), false)
+            .apply_event(
+                ResponseStreamEvent::ResponseError(err_event),
+                StreamOutput::Delta,
+            )
             .unwrap_err();
         assert!(
             matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("bad things"))

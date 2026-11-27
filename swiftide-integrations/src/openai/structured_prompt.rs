@@ -18,6 +18,7 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
+use super::chat_completion::{StreamOutput, collect_stream};
 use super::responses_api::{
     build_responses_request_from_prompt_with_schema, response_to_chat_completion,
 };
@@ -115,6 +116,18 @@ impl<
             "[StructuredPrompt] Request to openai"
         );
 
+        if self.streaming {
+            let completion = collect_stream(
+                self.stream_chat_request(request, StreamOutput::Final)
+                    .await?,
+            )
+            .await?;
+            let message = completion
+                .message
+                .ok_or_else(|| LanguageModelError::permanent("Expected content in response"))?;
+            return serde_json::from_str(&message).map_err(LanguageModelError::permanent);
+        }
+
         // Send the request to the OpenAI API and await the response.
         let response = self
             .client
@@ -171,6 +184,17 @@ impl<
 
         let create_request =
             build_responses_request_from_prompt_with_schema(self, prompt_text, schema_value)?;
+        if self.streaming {
+            let completion = collect_stream(
+                self.stream_responses_request(create_request, StreamOutput::Final)
+                    .await?,
+            )
+            .await?;
+            let message = completion
+                .message
+                .ok_or_else(|| LanguageModelError::permanent("Expected content in response"))?;
+            return serde_json::from_str(&message).map_err(LanguageModelError::permanent);
+        }
         let tracking_request = create_request.clone();
 
         let response = self

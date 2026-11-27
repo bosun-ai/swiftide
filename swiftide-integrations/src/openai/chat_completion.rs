@@ -33,6 +33,42 @@ use super::tool_schema::OpenAiToolSchema;
 use super::{GenericOpenAI, openai_error_to_language_model_error, request_body_with_extra_body};
 use tracing_futures::Instrument;
 
+#[derive(Clone, Copy)]
+pub(super) enum StreamOutput {
+    Full,
+    Delta,
+    /// Collect internally without cloning intermediate snapshots.
+    Final,
+}
+
+impl StreamOutput {
+    pub(super) fn snapshot(self, state: &ChatCompletionResponse) -> Option<ChatCompletionResponse> {
+        match self {
+            Self::Full => Some(state.clone()),
+            Self::Delta => Some(ChatCompletionResponse {
+                id: state.id,
+                message: None,
+                tool_calls: None,
+                usage: None,
+                reasoning: None,
+                delta: state.delta.clone(),
+            }),
+            Self::Final => None,
+        }
+    }
+}
+
+/// Both adapters emit a complete snapshot last, even with delta-only streaming enabled.
+pub(super) async fn collect_stream(
+    mut stream: ChatCompletionStream,
+) -> Result<ChatCompletionResponse, LanguageModelError> {
+    let mut last = None;
+    while let Some(response) = stream.next().await {
+        last = Some(response?);
+    }
+    last.ok_or_else(|| LanguageModelError::transient("Model returned an empty stream"))
+}
+
 #[async_trait]
 impl<
     C: async_openai::config::Config
@@ -56,6 +92,13 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        if self.streaming {
+            return collect_stream(
+                self.try_complete_stream(request, StreamOutput::Final)
+                    .await?,
+            )
+            .await;
+        }
         if self.is_responses_api_enabled() {
             return self.complete_via_responses_api(request).await;
         }
@@ -163,11 +206,12 @@ impl<
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
-        if self.is_responses_api_enabled() {
-            return self.complete_stream_via_responses_api(request).await;
-        }
-
-        match self.try_complete_stream(request).await {
+        let output = if self.stream_full {
+            StreamOutput::Full
+        } else {
+            StreamOutput::Delta
+        };
+        match self.try_complete_stream(request, output).await {
             Ok(stream) => stream,
             Err(err) => err.into(),
         }
@@ -188,15 +232,18 @@ impl<
     async fn try_complete_stream(
         &self,
         request: &ChatCompletionRequest<'_>,
+        output: StreamOutput,
     ) -> Result<ChatCompletionStream, LanguageModelError> {
+        if self.is_responses_api_enabled() {
+            return self
+                .stream_responses_request(build_responses_request_from_chat(self, request)?, output)
+                .await;
+        }
         let model_name = self
             .default_options
             .prompt_model
             .clone()
             .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
-
-        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
-        let _ = &model_name;
 
         let messages = request
             .messages()
@@ -209,11 +256,6 @@ impl<
             .chat_completion_request_defaults()
             .model(&model_name)
             .messages(messages)
-            .stream(true)
-            .stream_options(ChatCompletionStreamOptions {
-                include_usage: Some(true),
-                include_obfuscation: None,
-            })
             .to_owned();
 
         if !request.tools_spec().is_empty() {
@@ -239,6 +281,21 @@ impl<
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
+        self.stream_chat_request(openai_request, output).await
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub(super) async fn stream_chat_request(
+        &self,
+        mut openai_request: async_openai::types::chat::CreateChatCompletionRequest,
+        output: StreamOutput,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let model_name = openai_request.model.clone();
+        openai_request.stream = Some(true);
+        openai_request.stream_options = Some(ChatCompletionStreamOptions {
+            include_usage: Some(true),
+            include_obfuscation: None,
+        });
         let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
         let response_stream: ChatCompletionResponseStream = self
             .client
@@ -247,7 +304,6 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
         let self_for_stream = self.clone();
         let tracking_request = openai_request;
@@ -262,11 +318,17 @@ impl<
             (
                 response_stream,
                 ChatCompletionResponse::default(),
-                tracking_request.clone(),
+                tracking_request,
                 false, // finished
+                false, // generation terminated with a finish_reason
             ),
-            move |(mut response_stream, mut state, tracking_request, finished)| {
-                let stream_full = stream_full;
+            move |(
+                mut response_stream,
+                mut state,
+                tracking_request,
+                finished,
+                mut generation_finished,
+            )| {
                 let self_for_stream = self_for_stream.clone();
                 let model_name_for_track = model_name_for_track.clone();
                 async move {
@@ -274,79 +336,98 @@ impl<
                         return None;
                     }
 
-                    match response_stream.next().await {
-                        Some(Ok(chunk)) => {
-                            let delta_message = chunk
-                                .choices
-                                .first()
-                                .and_then(|d| d.delta.content.as_deref());
-                            let delta_tool_calls = chunk
-                                .choices
-                                .first()
-                                .and_then(|d| d.delta.tool_calls.as_deref());
-                            let usage = chunk.usage.as_ref();
+                    loop {
+                        match response_stream.next().await {
+                            Some(Ok(chunk)) => {
+                                generation_finished |= chunk
+                                    .choices
+                                    .first()
+                                    .is_some_and(|choice| choice.finish_reason.is_some());
+                                let delta_message = chunk
+                                    .choices
+                                    .first()
+                                    .and_then(|d| d.delta.content.as_deref());
+                                let delta_tool_calls = chunk
+                                    .choices
+                                    .first()
+                                    .and_then(|d| d.delta.tool_calls.as_deref());
+                                let usage = chunk.usage.as_ref();
 
-                            state.append_message_delta(delta_message);
-                            if let Some(delta_tool_calls) = delta_tool_calls {
-                                for tc in delta_tool_calls {
-                                    state.append_tool_call_delta(
-                                        tc.index as usize,
-                                        tc.id.as_deref(),
-                                        tc.function.as_ref().and_then(|f| f.name.as_deref()),
-                                        tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
+                                state.append_message_delta(delta_message);
+                                if let Some(delta_tool_calls) = delta_tool_calls {
+                                    for tc in delta_tool_calls {
+                                        state.append_tool_call_delta(
+                                            tc.index as usize,
+                                            tc.id.as_deref(),
+                                            tc.function.as_ref().and_then(|f| f.name.as_deref()),
+                                            tc.function
+                                                .as_ref()
+                                                .and_then(|f| f.arguments.as_deref()),
+                                        );
+                                    }
+                                }
+                                if let Some(usage) = usage {
+                                    let usage = Usage::from(usage);
+                                    state.append_usage_delta(
+                                        usage.prompt_tokens,
+                                        usage.completion_tokens,
+                                        usage.total_tokens,
                                     );
+                                    if let (Some(details), Some(state_usage)) =
+                                        (usage.details, state.usage.as_mut())
+                                    {
+                                        state_usage.details = Some(details);
+                                    }
+                                }
+
+                                if let Some(snapshot) = output.snapshot(&state) {
+                                    return Some((
+                                        Ok(snapshot),
+                                        (
+                                            response_stream,
+                                            state,
+                                            tracking_request,
+                                            false,
+                                            generation_finished,
+                                        ),
+                                    ));
                                 }
                             }
-                            if let Some(usage) = usage {
-                                let usage = Usage::from(usage);
-                                state.append_usage_delta(
-                                    usage.prompt_tokens,
-                                    usage.completion_tokens,
-                                    usage.total_tokens,
+                            Some(Err(err)) => {
+                                return Some((
+                                    Err(openai_error_to_language_model_error(err)),
+                                    (
+                                        response_stream,
+                                        state,
+                                        tracking_request,
+                                        true,
+                                        generation_finished,
+                                    ),
+                                ));
+                            }
+                            None => {
+                                if !generation_finished {
+                                    return Some((
+                                        Err(LanguageModelError::transient(
+                                            "Chat Completions stream ended before a finish reason",
+                                        )),
+                                        (response_stream, state, tracking_request, true, false),
+                                    ));
+                                }
+                                state.append_message_delta(None);
+                                // Final emission; track completion with the full state.
+                                self_for_stream.track_completion(
+                                    &model_name_for_track,
+                                    state.usage.as_ref(),
+                                    Some(&tracking_request),
+                                    Some(&state),
                                 );
-                                if let (Some(details), Some(state_usage)) =
-                                    (usage.details, state.usage.as_mut())
-                                {
-                                    state_usage.details = Some(details);
-                                }
+                                let final_snapshot = std::mem::take(&mut state);
+                                return Some((
+                                    Ok(final_snapshot),
+                                    (response_stream, state, tracking_request, true, true),
+                                ));
                             }
-
-                            let snapshot = if stream_full {
-                                state.clone()
-                            } else {
-                                ChatCompletionResponse {
-                                    id: state.id,
-                                    message: None,
-                                    tool_calls: None,
-                                    usage: None,
-                                    reasoning: None,
-                                    delta: state.delta.clone(),
-                                }
-                            };
-
-                            Some((
-                                Ok(snapshot),
-                                (response_stream, state, tracking_request, false),
-                            ))
-                        }
-                        Some(Err(err)) => Some((
-                            Err(openai_error_to_language_model_error(err)),
-                            (response_stream, state, tracking_request, true),
-                        )),
-                        None => {
-                            state.append_message_delta(None);
-                            // Final emission; track completion with the full state.
-                            self_for_stream.track_completion(
-                                &model_name_for_track,
-                                state.usage.as_ref(),
-                                Some(&tracking_request),
-                                Some(&state),
-                            );
-                            let final_snapshot = state.clone();
-                            Some((
-                                Ok(final_snapshot),
-                                (response_stream, state, tracking_request, true),
-                            ))
                         }
                     }
                 }
@@ -390,31 +471,12 @@ impl<
         Ok(completion)
     }
 
-    #[allow(clippy::too_many_lines)]
-    async fn complete_stream_via_responses_api(
+    pub(super) async fn stream_responses_request(
         &self,
-        request: &ChatCompletionRequest<'_>,
-    ) -> ChatCompletionStream {
-        match self.try_complete_stream_via_responses_api(request).await {
-            Ok(stream) => stream,
-            Err(err) => err.into(),
-        }
-    }
-
-    #[allow(clippy::too_many_lines)]
-    async fn try_complete_stream_via_responses_api(
-        &self,
-        request: &ChatCompletionRequest<'_>,
+        mut create_request: async_openai::types::responses::CreateResponse,
+        output: StreamOutput,
     ) -> Result<ChatCompletionStream, LanguageModelError> {
-        #[allow(unused_variables)]
-        let model_name = self
-            .default_options
-            .prompt_model
-            .clone()
-            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
-
-        let mut create_request = build_responses_request_from_chat(self, request)?;
-
+        let model_name = create_request.model.clone().unwrap_or_default();
         create_request.stream = Some(true);
 
         let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
@@ -425,15 +487,13 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let stream_full = self.stream_full;
-
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("responses_stream", langfuse.type = "GENERATION")
         } else {
             tracing::info_span!("responses_stream")
         };
 
-        let mapped_stream = responses_stream_adapter(stream, stream_full);
+        let mapped_stream = responses_stream_adapter(stream, output);
 
         let this = self.clone();
         let tracked_request = create_request;
@@ -739,6 +799,87 @@ mod tests {
     use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput, UsageBuilder};
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    async fn collecting_emits_only_the_final_response_and_explicit_streams_keep_their_output_mode()
+    {
+        for responses in [false, true] {
+            let server = MockServer::start().await;
+            let events = if responses {
+                vec![
+                    json!({"type": "response.output_text.delta", "sequence_number": 0,
+                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "hello "}),
+                    json!({"type": "response.output_text.delta", "sequence_number": 1,
+                        "item_id": "msg", "output_index": 0, "content_index": 0, "delta": "world"}),
+                    json!({"type": "response.completed", "sequence_number": 2,
+                        "response": {"id": "resp", "object": "response", "created_at": 1,
+                            "model": "test", "status": "completed", "output": []}}),
+                ]
+            } else {
+                [json!(null), json!("stop")].into_iter().zip(["hello ", "world"]).map(|(finish, text)| json!({
+                    "id": "chatcmpl-test", "object": "chat.completion.chunk", "created": 1,
+                    "model": "test", "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": finish}]
+                })).collect()
+            };
+            let mut body = String::new();
+            for event in events {
+                write!(body, "data: {event}\n\n").unwrap();
+            }
+            Mock::given(method("POST"))
+                .respond_with(
+                    ResponseTemplate::new(200)
+                        .insert_header("content-type", "text/event-stream")
+                        .set_body_string(body),
+                )
+                .mount(&server)
+                .await;
+            let config = async_openai::config::OpenAIConfig::new().with_api_base(server.uri());
+            let mut client = OpenAI::builder()
+                .client(async_openai::Client::with_config(config))
+                .default_prompt_model("test")
+                .streaming(true)
+                .use_responses_api(responses)
+                .build()
+                .unwrap();
+            let request = ChatCompletionRequest::builder()
+                .messages(vec![ChatMessage::User("hi".into())])
+                .build()
+                .unwrap();
+
+            let collected = client
+                .try_complete_stream(&request, StreamOutput::Final)
+                .await
+                .unwrap()
+                .collect::<Vec<_>>()
+                .await;
+            assert_eq!(collected.len(), 1);
+            assert_eq!(
+                collected[0].as_ref().unwrap().message(),
+                Some("hello world")
+            );
+            assert_eq!(
+                client.complete(&request).await.unwrap().message(),
+                Some("hello world")
+            );
+
+            for full in [true, false] {
+                client.stream_full = full;
+                let chunks = client
+                    .complete_stream(&request)
+                    .await
+                    .collect::<Vec<_>>()
+                    .await;
+                assert_eq!(chunks.len(), 3);
+                let first = chunks[0].as_ref().unwrap();
+                assert_eq!(first.message(), full.then_some("hello "));
+                assert_eq!(
+                    first.delta.as_ref().unwrap().message_chunk.as_deref(),
+                    Some("hello ")
+                );
+                assert_eq!(chunks[2].as_ref().unwrap().message(), Some("hello world"));
+            }
+        }
+    }
 
     #[allow(dead_code)]
     #[derive(schemars::JsonSchema)]
@@ -1771,6 +1912,8 @@ data: [DONE]\n\n";
                 "choices": [],
                 "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3}
             }));
+        } else {
+            chunks.last_mut().unwrap()["choices"][0]["finish_reason"] = "stop".into();
         }
         let mut sse_body = String::new();
         for mut chunk in chunks {
